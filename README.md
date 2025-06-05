@@ -1,6 +1,6 @@
-# Companion Module for Bitfocus Listener
+# Connection Module for Bitfocus Listener
 
-This module integrates [Bitfocus Companion](https://bitfocus.io/companion) with the [Bitfocus Listener](https://bitfocus.io) application, allowing you to control your computer through Companion.
+This module integrates [Bitfocus Buttons](https://bitfocus.io/buttons) and [Bitfocus Companion](https://bitfocus.io/companion) with the [Bitfocus Listener](https://bitfocus.io) application, allowing you to control your computer through Companion.
 
 ## Overview
 
@@ -43,7 +43,7 @@ This module is particularly useful for:
 
 - Controlling presentation software during live events
 - Automating repetitive tasks on your computer
-- Integrating computer actions into your Companion workflows
+- Integrating computer actions into your Buttons/Companion workflows
 - Triggering application-specific functions from your Stream Deck or other Companion control surfaces
 
 ## Support
