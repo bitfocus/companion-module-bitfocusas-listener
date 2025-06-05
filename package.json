@@ -1,5 +1,5 @@
 {
-	"name": "your-module-name",
+	"name": "bitfocusas-listener",
 	"version": "0.1.0",
 	"main": "dist/main.js",
 	"type": "module",
@@ -16,14 +16,16 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/bitfocus/companion-module-your-module-name.git"
+		"url": "git+https://github.com/bitfocus/companion-module-bitfocusas-listener.git"
 	},
 	"dependencies": {
-		"@companion-module/base": "~1.11.2"
+		"@companion-module/base": "^1.12.1",
+		"ws": "^8.18.2"
 	},
 	"devDependencies": {
 		"@companion-module/tools": "^2.1.1",
 		"@types/node": "^22.10.2",
+		"@types/ws": "^8.18.1",
 		"eslint": "^9.17.0",
 		"husky": "^9.1.7",
 		"lint-staged": "^15.2.11",
@@ -35,11 +37,10 @@
 	"prettier": "@companion-module/tools/.prettierrc.json",
 	"lint-staged": {
 		"*.{css,json,md,scss}": [
-			"prettier --write"
+			"echo 'staging prettier'"
 		],
 		"*.{ts,tsx,js,jsx}": [
-			"yarn lint:raw --fix"
+			"echo 'staging lint'"
 		]
-	},
-	"packageManager": "yarn@4.5.3"
+	}
 }

@@ -24,9 +24,8 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 				console.log('Hello world!', feedback.options.num)
 				if (Number(feedback.options.num) > 5) {
 					return true
-				} else {
-					return false
 				}
+				return false
 			},
 		},
 	})
