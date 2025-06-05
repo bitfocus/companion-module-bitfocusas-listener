@@ -34,7 +34,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 			// biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
 			let msg
 			try {
-				msg = JSON.parse(event.data)
+				msg = JSON.parse(event.data as string)
 			} catch (e) {
 				this.log('error', 'Invalid JSON received')
 				return
