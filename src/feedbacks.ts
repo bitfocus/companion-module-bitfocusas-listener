@@ -1,9 +1,9 @@
-import { combineRgb } from '@companion-module/base'
+//import { combineRgb } from '@companion-module/base'
 import type { ModuleInstance } from './main.js'
 
 export function UpdateFeedbacks(self: ModuleInstance): void {
 	self.setFeedbackDefinitions({
-		ChannelState: {
+		/*ChannelState: {
 			name: 'Example Feedback',
 			type: 'boolean',
 			defaultStyle: {
@@ -28,5 +28,6 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 				return false
 			},
 		},
+		*/
 	})
 }

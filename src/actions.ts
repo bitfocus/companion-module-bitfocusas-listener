@@ -10,7 +10,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					type: 'textinput',
 					id: 'key',
 					label: 'Key to Press',
-					default: 'a',
+					default: '',
 				},
 			],
 			callback: async (event) => {
@@ -28,7 +28,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					type: 'textinput',
 					id: 'key',
 					label: 'Key to Press Down',
-					default: 'a',
+					default: '',
 				},
 			],
 			callback: async (event) => {
@@ -46,7 +46,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					type: 'textinput',
 					id: 'key',
 					label: 'Key to Release',
-					default: 'a',
+					default: '',
 				},
 			],
 			callback: async (event) => {
@@ -102,7 +102,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					type: 'textinput',
 					id: 'processName',
 					label: 'Process Name',
-					default: 'Microsoft PowerPoint',
+					default: '',
 				},
 			],
 			callback: async (event) => {
@@ -142,7 +142,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					type: 'textinput',
 					id: 'msg',
 					label: 'String to Type',
-					default: 'Hello, world!',
+					default: '',
 				},
 			],
 			callback: async (event) => {
@@ -178,7 +178,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					type: 'textinput',
 					id: 'path',
 					label: 'File Path',
-					default: 'C:/path/to/file.pdf',
+					default: '',
 				},
 			],
 			callback: async (event) => {

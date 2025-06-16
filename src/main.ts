@@ -10,6 +10,12 @@ import { createHash } from 'node:crypto'
 export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	socket: WebSocket | null = null
 	config!: ModuleConfig
+	reconnectTimer: NodeJS.Timeout | null = null
+	reconnectAttempts = 0
+	reconnectDelay = 500 // Start with 500ms
+	maxReconnectDelay = 10000 // Cap at 10 seconds
+	reconnectIncrementMs = 500 // Increment by 500ms
+	absoluteMaxReconnectDelay = 15000 // Absolute max of 15 seconds
 
 	async init(config: ModuleConfig): Promise<void> {
 		this.config = config
@@ -24,11 +30,20 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 
 	// Connect to the Bitfocus Listener WebSocket server.
 	connectSocket(): void {
+		// Clear any existing reconnect timer
+		if (this.reconnectTimer) {
+			clearTimeout(this.reconnectTimer)
+			this.reconnectTimer = null
+		}
+
 		const url = `ws://${this.config.host}:${this.config.port}/ws`
 		this.log('debug', `Connecting to ${url}`)
 		this.socket = new WebSocket(url)
 		this.socket.onopen = () => {
 			this.log('debug', 'Socket connected')
+			// Reset reconnection attempts on successful connection
+			this.reconnectAttempts = 0
+			this.reconnectDelay = 500
 		}
 		this.socket.onmessage = (event) => {
 			// biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
@@ -69,6 +84,8 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		this.socket.onclose = () => {
 			this.log('debug', 'Socket closed')
 			this.updateStatus(InstanceStatus.Disconnected, 'Socket closed')
+			// Attempt to reconnect with backoff strategy
+			this.scheduleReconnect()
 		}
 	}
 
@@ -78,7 +95,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	}
 
 	// Send a command via the WebSocket connection.
-	sendCommand(cmd: any): void {
+	sendCommand(cmd: Record<string, unknown>): void {
 		if (this.socket && this.socket.readyState === WebSocket.OPEN) {
 			this.socket.send(JSON.stringify(cmd))
 		} else {
@@ -86,8 +103,37 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		}
 	}
 
+	// Schedule a reconnection attempt with backoff
+	scheduleReconnect(): void {
+		// Don't schedule a reconnect if we're being destroyed
+		if (!this.socket) return
+
+		// Calculate the next reconnect delay with backoff
+		this.reconnectAttempts++
+
+		// Calculate delay: 500ms, 1000ms, 1500ms, etc. up to maxReconnectDelay
+		this.reconnectDelay = Math.min(this.reconnectIncrementMs * this.reconnectAttempts, this.maxReconnectDelay)
+
+		// Ensure we never exceed the absolute maximum delay
+		const actualDelay = Math.min(this.reconnectDelay, this.absoluteMaxReconnectDelay)
+
+		this.log('debug', `Scheduling reconnect attempt ${this.reconnectAttempts} in ${actualDelay}ms`)
+
+		// Schedule the reconnection
+		this.reconnectTimer = setTimeout(() => {
+			this.log('debug', `Attempting to reconnect (attempt ${this.reconnectAttempts})`)
+			this.connectSocket()
+		}, actualDelay)
+	}
+
 	async destroy(): Promise<void> {
 		this.log('debug', 'destroy')
+		// Clear any reconnect timer
+		if (this.reconnectTimer) {
+			clearTimeout(this.reconnectTimer)
+			this.reconnectTimer = null
+		}
+
 		if (this.socket) {
 			this.socket.close()
 			this.socket = null
@@ -96,7 +142,18 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 
 	async configUpdated(config: ModuleConfig): Promise<void> {
 		this.config = config
-		// Reconnect socket when config is updated.
+
+		// Clear any reconnect timer
+		if (this.reconnectTimer) {
+			clearTimeout(this.reconnectTimer)
+			this.reconnectTimer = null
+		}
+
+		// Reset reconnection state
+		this.reconnectAttempts = 0
+		this.reconnectDelay = 500
+
+		// Reconnect socket when config is updated
 		if (this.socket) {
 			this.socket.close()
 			this.socket = null
