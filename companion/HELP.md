@@ -51,30 +51,23 @@ Shows recent connections and actions. Useful when debugging why a command was ig
 
 ### Key names and modifiers
 
-Use lowercase names where possible. Common special keys:
+Keyboard actions use searchable dropdowns for keys and modifiers. Prefer selecting from the list — that uses the exact strings Listener expects and avoids typos.
 
-| Key               | Values                                                                                                     |
-| ----------------- | ---------------------------------------------------------------------------------------------------------- |
-| Navigation        | `up`, `down`, `left`, `right`, `home`, `end`, `pageup`, `pagedown`, `tab`, `backspace`, `delete`, `insert` |
-| Function          | `f1` … `f12`                                                                                               |
-| System            | `esc`, `enter`, `space`, `print`, `scroll`, `pause`, `break`                                               |
-| Media             | `play`, `pause`, `stop`, `next`, `previous`, `volumeup`, `volumedown`, `mute`                              |
-| Letters / numbers | `a`–`z`, `0`–`9`                                                                                           |
-| Symbols           | e.g. `-`, `=`, `[`, `]`, `;`, `'`, `,`, `.`, `/`, `` ` ``                                                  |
+Key categories include Navigation, Function, Media, System, Modifiers, Numbers, Letters, and Symbols. You can also enter a custom value if needed.
 
-**Modifiers** (for combinations; comma-separated in the action field):
+**Modifiers** (for Key Combination / OSX Key Press Process):
 
-- `alt`
-- `ctrl` (alias: `control`)
-- `shift`
-- `cmd` / `command` (macOS)
-- `win` (Windows)
+- `alt` — Alt / Option
+- `ctrl` — Ctrl
+- `shift` — Shift
+- `command` / `cmd` — Cmd (macOS); on Windows some setups respond to `cmd` for the Windows key
+- `win` — Windows key
 
 Examples:
 
 - Key Combination: key `c`, modifiers `ctrl` → Ctrl+C
 - Key Combination: key `tab`, modifiers `alt` → Alt+Tab
-- Key Combination: key `s`, modifiers `cmd` → Cmd+S on macOS
+- Key Combination: key `s`, modifiers `command` → Cmd+S on macOS
 
 ### Actions
 

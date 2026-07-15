@@ -1,4 +1,28 @@
 import type { ModuleInstance } from './main.js'
+import {
+	DEFAULT_COMBINATION_KEY,
+	DEFAULT_KEY,
+	DEFAULT_MODIFIERS,
+	KEY_CHOICES,
+	MODIFIER_CHOICES,
+	normalizeModifiers,
+} from './keys.js'
+
+const KEY_DROPDOWN = {
+	type: 'dropdown' as const,
+	choices: KEY_CHOICES,
+	allowCustom: true,
+	minChoicesForSearch: 0,
+}
+
+const MODIFIER_DROPDOWN = {
+	type: 'multidropdown' as const,
+	id: 'modifiers',
+	label: 'Modifiers',
+	choices: MODIFIER_CHOICES,
+	default: DEFAULT_MODIFIERS,
+	minChoicesForSearch: 0,
+}
 
 export function UpdateActions(self: ModuleInstance): void {
 	self.setActionDefinitions({
@@ -7,10 +31,10 @@ export function UpdateActions(self: ModuleInstance): void {
 			name: 'Key Press',
 			options: [
 				{
-					type: 'textinput',
+					...KEY_DROPDOWN,
 					id: 'key',
 					label: 'Key to Press',
-					default: '',
+					default: DEFAULT_KEY,
 				},
 			],
 			callback: async (event) => {
@@ -25,10 +49,10 @@ export function UpdateActions(self: ModuleInstance): void {
 			name: 'Key Down',
 			options: [
 				{
-					type: 'textinput',
+					...KEY_DROPDOWN,
 					id: 'key',
 					label: 'Key to Press Down',
-					default: '',
+					default: DEFAULT_KEY,
 				},
 			],
 			callback: async (event) => {
@@ -43,10 +67,10 @@ export function UpdateActions(self: ModuleInstance): void {
 			name: 'Key Up',
 			options: [
 				{
-					type: 'textinput',
+					...KEY_DROPDOWN,
 					id: 'key',
 					label: 'Key to Release',
-					default: '',
+					default: DEFAULT_KEY,
 				},
 			],
 			callback: async (event) => {
@@ -61,24 +85,18 @@ export function UpdateActions(self: ModuleInstance): void {
 			name: 'Key Combination Press',
 			options: [
 				{
-					type: 'textinput',
+					...KEY_DROPDOWN,
 					id: 'key',
 					label: 'Key',
-					default: 'tab',
+					default: DEFAULT_COMBINATION_KEY,
 				},
-				{
-					type: 'textinput',
-					id: 'modifiers',
-					label: 'Modifiers (comma separated)',
-					default: 'alt',
-				},
+				MODIFIER_DROPDOWN,
 			],
 			callback: async (event) => {
-				const mods = (event.options.modifiers as string).split(',').map((s: string) => s.trim())
 				self.sendCommand({
 					type: 'keyCombinationPress',
 					key: event.options.key,
-					modifiers: mods,
+					modifiers: normalizeModifiers(event.options.modifiers),
 				})
 			},
 		},
@@ -87,17 +105,12 @@ export function UpdateActions(self: ModuleInstance): void {
 			name: 'OSX Key Press Process (OSX only)',
 			options: [
 				{
-					type: 'textinput',
+					...KEY_DROPDOWN,
 					id: 'key',
 					label: 'Key',
-					default: 'tab',
+					default: DEFAULT_COMBINATION_KEY,
 				},
-				{
-					type: 'textinput',
-					id: 'modifiers',
-					label: 'Modifiers (comma separated)',
-					default: 'alt',
-				},
+				MODIFIER_DROPDOWN,
 				{
 					type: 'textinput',
 					id: 'processName',
@@ -106,12 +119,10 @@ export function UpdateActions(self: ModuleInstance): void {
 				},
 			],
 			callback: async (event) => {
-				const modarr: string = event.options.modifiers as string
-				const mods = modarr.split(',').map((s: string) => s.trim())
 				self.sendCommand({
 					type: 'osxKeyPressProcess',
 					key: event.options.key,
-					modifiers: mods,
+					modifiers: normalizeModifiers(event.options.modifiers),
 					processName: event.options.processName,
 				})
 			},
@@ -260,15 +271,20 @@ export function UpdateActions(self: ModuleInstance): void {
 				})
 			},
 		},
-		// Subscribe (with input for subscription type)
+		// Subscribe
 		subscribe: {
 			name: 'Subscribe',
 			options: [
 				{
-					type: 'textinput',
+					type: 'dropdown',
 					id: 'subType',
-					label: 'Subscription Type (e.g., mousePosition or sysInfo)',
+					label: 'Subscription Type',
+					choices: [
+						{ id: 'mousePosition', label: 'Mouse Position' },
+						{ id: 'sysInfo', label: 'System Info' },
+					],
 					default: 'mousePosition',
+					allowCustom: true,
 				},
 			],
 			callback: async (event) => {
@@ -278,15 +294,20 @@ export function UpdateActions(self: ModuleInstance): void {
 				})
 			},
 		},
-		// Unsubscribe (with input for subscription type)
+		// Unsubscribe
 		unsubscribe: {
 			name: 'Unsubscribe',
 			options: [
 				{
-					type: 'textinput',
+					type: 'dropdown',
 					id: 'subType',
-					label: 'Subscription Type (e.g., mousePosition or sysInfo)',
+					label: 'Subscription Type',
+					choices: [
+						{ id: 'mousePosition', label: 'Mouse Position' },
+						{ id: 'sysInfo', label: 'System Info' },
+					],
 					default: 'mousePosition',
+					allowCustom: true,
 				},
 			],
 			callback: async (event) => {
