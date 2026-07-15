@@ -116,6 +116,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					id: 'processName',
 					label: 'Process Name',
 					default: '',
+					useVariables: true,
 				},
 			],
 			callback: async (event) => {
@@ -136,6 +137,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					id: 'script',
 					label: 'AppleScript Command',
 					default: 'tell application "Finder" to activate',
+					useVariables: true,
 				},
 			],
 			callback: async (event) => {
@@ -154,6 +156,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					id: 'msg',
 					label: 'String to Type',
 					default: '',
+					useVariables: true,
 				},
 			],
 			callback: async (event) => {
@@ -172,6 +175,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					id: 'shell',
 					label: 'Shell Command',
 					default: 'dir',
+					useVariables: true,
 				},
 			],
 			callback: async (event) => {
@@ -190,6 +194,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					id: 'path',
 					label: 'File Path',
 					default: '',
+					useVariables: true,
 				},
 			],
 			callback: async (event) => {
