@@ -106,16 +106,16 @@ Values update when Listener sends data. Connection options control continuous up
 
 Use variables in button text, other actions, or expressions as `$(bitfocusas-listener:mouse_x)` (label depends on your connection name).
 
-| Variable       | Source                                         | Description                      |
-| -------------- | ---------------------------------------------- | -------------------------------- |
-| `mouse_x`      | Mouse subscribe / Get Mouse Position           | Cursor X                         |
-| `mouse_y`      | Mouse subscribe / Get Mouse Position           | Cursor Y                         |
-| `cpu`          | System info subscribe                          | Overall CPU usage %              |
-| `max_cpu`      | System info subscribe                          | Highest sampled core CPU usage % |
-| `mem`          | System info subscribe                          | Used memory in bytes             |
-| `max_mem`      | System info subscribe                          | Total memory in bytes            |
-| `mem_percent`  | System info subscribe                          | Used memory as a percentage      |
-| `processes`    | System info subscribe                          | Number of running processes      |
+| Variable      | Source                               | Description                      |
+| ------------- | ------------------------------------ | -------------------------------- |
+| `mouse_x`     | Mouse subscribe / Get Mouse Position | Cursor X                         |
+| `mouse_y`     | Mouse subscribe / Get Mouse Position | Cursor Y                         |
+| `cpu`         | System info subscribe                | Overall CPU usage %              |
+| `max_cpu`     | System info subscribe                | Highest sampled core CPU usage % |
+| `mem`         | System info subscribe                | Used memory in bytes             |
+| `max_mem`     | System info subscribe                | Total memory in bytes            |
+| `mem_percent` | System info subscribe                | Used memory as a percentage      |
+| `processes`   | System info subscribe                | Number of running processes      |
 
 ### Feedbacks / conditions
 

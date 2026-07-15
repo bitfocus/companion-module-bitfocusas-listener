@@ -89,7 +89,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	handleMessage(msg: Record<string, unknown>): void {
 		switch (msg.type) {
 			case 'authChallenge': {
-				const salt = String(msg.salt ?? '')
+				const salt = typeof msg.salt === 'string' ? msg.salt : ''
 				const hash = this.computeMD5(salt + (this.secrets.password ?? ''))
 				this.sendCommand({ type: 'auth', password: hash })
 				return
