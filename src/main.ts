@@ -1,7 +1,14 @@
 import { InstanceBase, runEntrypoint, InstanceStatus, type SomeCompanionConfigField } from '@companion-module/base'
 import { WebSocket } from 'ws'
 import { GetConfigFields, type ModuleConfig, type ModuleSecrets } from './config.js'
-import { UpdateVariableDefinitions } from './variables.js'
+import {
+	UpdateVariableDefinitions,
+	applyMousePosition,
+	applySysInfo,
+	createEmptyState,
+	stateToVariableValues,
+	type ListenerState,
+} from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
@@ -11,6 +18,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	socket: WebSocket | null = null
 	config!: ModuleConfig
 	secrets!: ModuleSecrets
+	state: ListenerState = createEmptyState()
 	reconnectTimer: NodeJS.Timeout | null = null
 	reconnectAttempts = 0
 	reconnectDelay = 500 // Start with 500ms
@@ -22,12 +30,13 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		this.config = config
 		this.secrets = secrets
 
-		// Initially, set status to Warning until authenticated.
-		this.updateStatus(InstanceStatus.UnknownWarning)
-		this.connectSocket()
 		this.updateActions()
 		this.updateFeedbacks()
 		this.updateVariableDefinitions()
+
+		// Initially, set status to Warning until authenticated.
+		this.updateStatus(InstanceStatus.UnknownWarning)
+		this.connectSocket()
 	}
 
 	// Connect to the Bitfocus Listener WebSocket server.
@@ -48,36 +57,14 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			this.reconnectDelay = 500
 		}
 		this.socket.onmessage = (event) => {
-			// biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-			let msg
+			let msg: Record<string, unknown>
 			try {
-				msg = JSON.parse(event.data as string)
+				msg = JSON.parse(event.data as string) as Record<string, unknown>
 			} catch (_e) {
 				this.log('error', 'Invalid JSON received')
 				return
 			}
-			// When we receive an authChallenge, compute MD5(salt+password) and send auth.
-			if (msg.type === 'authChallenge') {
-				const salt = msg.salt
-				const hash = this.computeMD5(salt + this.secrets.password)
-				this.sendCommand({ type: 'auth', password: hash })
-			} else if (msg.type === 'authResponse') {
-				// Update status based on authentication outcome.
-				if (msg.status === 'authenticated') {
-					this.log('debug', 'Authentication successful')
-					this.updateStatus(InstanceStatus.Ok)
-					// send a subscribeSysInfo command to get system info.
-					this.sendCommand({
-						type: 'subscribeSysInfo',
-					})
-				} else {
-					this.log('error', 'Authentication failed')
-					this.updateStatus(InstanceStatus.BadConfig, 'Authentication failed')
-				}
-			} else {
-				this.log('debug', `Received message: ${JSON.stringify(event.data)}`)
-			}
-			// Optionally, handle other incoming messages.
+			this.handleMessage(msg)
 		}
 		this.socket.onerror = (err) => {
 			this.log('error', `Socket error: ${JSON.stringify(err)}`)
@@ -88,6 +75,45 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			this.updateStatus(InstanceStatus.Disconnected, 'Socket closed')
 			// Attempt to reconnect with backoff strategy
 			this.scheduleReconnect()
+		}
+	}
+
+	handleMessage(msg: Record<string, unknown>): void {
+		switch (msg.type) {
+			case 'authChallenge': {
+				const salt = String(msg.salt ?? '')
+				const hash = this.computeMD5(salt + this.secrets.password)
+				this.sendCommand({ type: 'auth', password: hash })
+				return
+			}
+			case 'authResponse': {
+				if (msg.status === 'authenticated') {
+					this.log('debug', 'Authentication successful')
+					this.updateStatus(InstanceStatus.Ok)
+					this.applyConfiguredSubscriptions()
+				} else {
+					this.log('error', 'Authentication failed')
+					this.updateStatus(InstanceStatus.BadConfig, 'Authentication failed')
+				}
+				return
+			}
+			case 'mousePositionUpdate':
+			case 'mousePositionGetResponse': {
+				if (applyMousePosition(this.state, msg.x, msg.y)) {
+					this.setVariableValues(stateToVariableValues(this.state))
+					this.checkFeedbacks('mouse_x_above', 'mouse_y_above')
+				}
+				return
+			}
+			case 'sysInfoUpdate': {
+				if (applySysInfo(this.state, msg)) {
+					this.setVariableValues(stateToVariableValues(this.state))
+					this.checkFeedbacks('cpu_above', 'mem_percent_above', 'processes_above')
+				}
+				return
+			}
+			default:
+				this.log('debug', `Received message: ${JSON.stringify(msg)}`)
 		}
 	}
 
@@ -102,6 +128,15 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			this.socket.send(JSON.stringify(cmd))
 		} else {
 			this.log('error', 'Socket not connected')
+		}
+	}
+
+	applyConfiguredSubscriptions(): void {
+		if (this.config.subscribeSysInfo) {
+			this.sendCommand({ type: 'subscribeSysInfo' })
+		}
+		if (this.config.subscribeMousePosition) {
+			this.sendCommand({ type: 'subscribeMousePosition' })
 		}
 	}
 

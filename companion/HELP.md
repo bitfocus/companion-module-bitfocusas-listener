@@ -17,6 +17,8 @@ Download Listener from [https://user.bitfocus.io/download](https://user.bitfocus
    - **Target Host** — IP address or hostname of the computer running Listener
    - **Target Port** — same port as Listener (default `12001`)
    - **Password** — the password shown in Listener
+   - **Subscribe to System Info** — on by default; updates CPU / memory / process variables (~5s)
+   - **Subscribe to Mouse Position** — off by default; enable for continuous mouse X/Y updates (~1s)
 4. Click **Save**. When authentication succeeds, the connection status should show OK / connected.
 
 If authentication fails, double-check the password and regenerate it in Listener if needed (**Generate New**).
@@ -93,14 +95,39 @@ Examples:
 - **Shell Command** — run a shell command on the Listener machine (`sh -c` on macOS/Linux, `cmd /C` on Windows; Companion variables supported)
 - **Open File** — open a file, folder, or URL with the OS default handler (`open` / `xdg-open` / Windows FileProtocolHandler; Companion variables supported)
 
-**Subscriptions**
+### Variables
 
-- **Subscribe** — start receiving updates from Listener. Supported types:
-  - `mousePosition` — cursor position updates (~1 second)
-  - `sysInfo` — CPU / memory / process count updates (~5 seconds)
-- **Unsubscribe** — stop a subscription (`mousePosition` or `sysInfo`)
+Values update when Listener sends data. Connection options control continuous updates:
 
-The connection automatically subscribes to `sysInfo` after a successful login. Feedbacks and variables from those updates are not exposed in this module yet.
+- **Subscribe to System Info** (default on) — CPU / memory / process variables every ~5 seconds
+- **Subscribe to Mouse Position** (default off) — mouse X/Y every ~1 second
+
+**Get Mouse Position** still requests a one-shot update even when the mouse subscription is disabled.
+
+Use variables in button text, other actions, or expressions as `$(bitfocusas-listener:mouse_x)` (label depends on your connection name).
+
+| Variable       | Source                                         | Description                      |
+| -------------- | ---------------------------------------------- | -------------------------------- |
+| `mouse_x`      | Mouse subscribe / Get Mouse Position           | Cursor X                         |
+| `mouse_y`      | Mouse subscribe / Get Mouse Position           | Cursor Y                         |
+| `cpu`          | System info subscribe                          | Overall CPU usage %              |
+| `max_cpu`      | System info subscribe                          | Highest sampled core CPU usage % |
+| `mem`          | System info subscribe                          | Used memory in bytes             |
+| `max_mem`      | System info subscribe                          | Total memory in bytes            |
+| `mem_percent`  | System info subscribe                          | Used memory as a percentage      |
+| `processes`    | System info subscribe                          | Number of running processes      |
+
+### Feedbacks / conditions
+
+Boolean feedbacks compare the latest Listener values to a threshold (shown under Feedbacks / usable as button conditions):
+
+- **CPU Above Threshold**
+- **Memory % Above Threshold**
+- **Process Count Above Threshold**
+- **Mouse X Above Threshold**
+- **Mouse Y Above Threshold**
+
+Note: key-held conditions (e.g. “is Shift pressed?”) are not available — Listener does not report keyboard modifier state.
 
 ### Tips
 

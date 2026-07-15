@@ -28,7 +28,7 @@ With this module, you can control your computer in the following ways:
 - Run shell commands
 - Open files
 - Execute AppleScript commands (macOS only)
-- Subscribe to system events and information
+- Optionally subscribe to system info and mouse position for variables / feedbacks
 
 ## Configuration
 
@@ -39,6 +39,8 @@ To use this module, you need to:
    - **Target Host**: IP address or hostname of the computer running Listener
    - **Target Port**: The port Listener is using (default: 12001)
    - **Password**: The authentication password set in Listener
+   - **Subscribe to System Info**: Enable continuous CPU / memory / process updates (default on)
+   - **Subscribe to Mouse Position**: Enable continuous mouse X/Y updates (default off)
 
 ## Use Cases
 
