@@ -3,6 +3,9 @@ import { Regex, type SomeCompanionConfigField } from '@companion-module/base'
 export interface ModuleConfig {
 	host: string
 	port: number
+}
+
+export interface ModuleSecrets {
 	password: string
 }
 
@@ -25,11 +28,10 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			default: 12001,
 		},
 		{
-			type: 'textinput',
+			type: 'secret-text',
 			id: 'password',
 			label: 'Password',
 			width: 12,
-			default: '',
 		},
 	]
 }

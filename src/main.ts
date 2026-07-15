@@ -1,15 +1,16 @@
 import { InstanceBase, runEntrypoint, InstanceStatus, type SomeCompanionConfigField } from '@companion-module/base'
 import { WebSocket } from 'ws'
-import { GetConfigFields, type ModuleConfig } from './config.js'
+import { GetConfigFields, type ModuleConfig, type ModuleSecrets } from './config.js'
 import { UpdateVariableDefinitions } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
 import { createHash } from 'node:crypto'
 
-export class ModuleInstance extends InstanceBase<ModuleConfig> {
+export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	socket: WebSocket | null = null
 	config!: ModuleConfig
+	secrets!: ModuleSecrets
 	reconnectTimer: NodeJS.Timeout | null = null
 	reconnectAttempts = 0
 	reconnectDelay = 500 // Start with 500ms
@@ -17,8 +18,9 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	reconnectIncrementMs = 500 // Increment by 500ms
 	absoluteMaxReconnectDelay = 15000 // Absolute max of 15 seconds
 
-	async init(config: ModuleConfig): Promise<void> {
+	async init(config: ModuleConfig, _isFirstInit: boolean, secrets: ModuleSecrets): Promise<void> {
 		this.config = config
+		this.secrets = secrets
 
 		// Initially, set status to Warning until authenticated.
 		this.updateStatus(InstanceStatus.UnknownWarning)
@@ -57,7 +59,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 			// When we receive an authChallenge, compute MD5(salt+password) and send auth.
 			if (msg.type === 'authChallenge') {
 				const salt = msg.salt
-				const hash = this.computeMD5(salt + this.config.password)
+				const hash = this.computeMD5(salt + this.secrets.password)
 				this.sendCommand({ type: 'auth', password: hash })
 			} else if (msg.type === 'authResponse') {
 				// Update status based on authentication outcome.
@@ -140,8 +142,9 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		}
 	}
 
-	async configUpdated(config: ModuleConfig): Promise<void> {
+	async configUpdated(config: ModuleConfig, secrets: ModuleSecrets): Promise<void> {
 		this.config = config
+		this.secrets = secrets
 
 		// Clear any reconnect timer
 		if (this.reconnectTimer) {
