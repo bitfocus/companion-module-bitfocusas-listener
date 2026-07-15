@@ -14,7 +14,7 @@ Download Listener from [https://user.bitfocus.io/download](https://user.bitfocus
    - **Server Port** — default is `12001`.
    - **Password** — use **Show** or **Copy** to read the generated password.
 3. In Companion / Buttons, add a **Bitfocus Listener** connection and set:
-   - **Target IP** — IP address of the computer running Listener
+   - **Target Host** — IP address or hostname of the computer running Listener
    - **Target Port** — same port as Listener (default `12001`)
    - **Password** — the password shown in Listener
 4. Click **Save**. When authentication succeeds, the connection status should show OK / connected.
@@ -77,9 +77,10 @@ Examples:
 - **Key Down** — press and hold a key
 - **Key Up** — release a held key
 - **Key Combination Press** — press a key with one or more modifiers
-- **Key String** — type a text string into the focused field / application
+- **Key String** — type a text string into the focused field / application (Companion variables supported)
+- **Volume Up / Down / Mute** — media volume keys (same as Key Press with `volumeup` / `volumedown` / `mute`)
 - **OSX Key Press Process** _(macOS only)_ — activate an application by name, then send a key (with optional modifiers). Process name examples: `Finder`, `Google Chrome`, `Microsoft PowerPoint`
-- **OSX AppleScript** _(macOS only)_ — run an AppleScript snippet on the Listener machine
+- **OSX AppleScript** _(macOS only)_ — run an AppleScript snippet on the Listener machine (Companion variables supported)
 
 **Mouse**
 
@@ -89,8 +90,8 @@ Examples:
 
 **System**
 
-- **Shell Command** — run a shell command on the Listener machine (`sh -c` on macOS/Linux, `cmd /C` on Windows)
-- **Open File** — open a file, folder, or URL with the OS default handler (`open` / `xdg-open` / Windows FileProtocolHandler)
+- **Shell Command** — run a shell command on the Listener machine (`sh -c` on macOS/Linux, `cmd /C` on Windows; Companion variables supported)
+- **Open File** — open a file, folder, or URL with the OS default handler (`open` / `xdg-open` / Windows FileProtocolHandler; Companion variables supported)
 
 **Subscriptions**
 
@@ -106,7 +107,7 @@ The connection automatically subscribes to `sysInfo` after a successful login. F
 - Prefer discrete key actions over Shell / AppleScript when possible — they are easier to audit and safer to leave enabled in Listener.
 - Keep Shell and AppleScript disabled in Listener unless you specifically need them.
 - If keys work locally but not from Companion, check **Key Access Control** and **Allowed Remote Actions** in Listener.
-- Use a static IP or DHCP reservation on the Listener machine so the Target IP does not change.
+- Use a static IP, DHCP reservation, or stable hostname on the Listener machine so the Target Host does not change.
 - Regenerating the Listener password immediately disconnects clients that still use the old password.
 
 ### Support

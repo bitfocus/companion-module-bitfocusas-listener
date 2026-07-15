@@ -36,7 +36,7 @@ To use this module, you need to:
 
 1. Download and install the [Bitfocus Listener](https://bitfocus.io) application on the computer you want to control
 2. Configure the module with:
-   - **Target IP**: The IP address of the computer running Listener
+   - **Target Host**: IP address or hostname of the computer running Listener
    - **Target Port**: The port Listener is using (default: 12001)
    - **Password**: The authentication password set in Listener
 

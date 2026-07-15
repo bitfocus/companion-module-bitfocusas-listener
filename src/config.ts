@@ -14,9 +14,10 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 		{
 			type: 'textinput',
 			id: 'host',
-			label: 'Target IP',
+			label: 'Target Host',
 			width: 8,
-			regex: Regex.IP,
+			regex: Regex.HOSTNAME,
+			tooltip: 'IP address or hostname of the computer running Bitfocus Listener',
 		},
 		{
 			type: 'number',
