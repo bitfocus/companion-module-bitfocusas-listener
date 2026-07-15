@@ -50,7 +50,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 			let msg
 			try {
 				msg = JSON.parse(event.data as string)
-			} catch (e) {
+			} catch (_e) {
 				this.log('error', 'Invalid JSON received')
 				return
 			}
@@ -73,12 +73,12 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 					this.updateStatus(InstanceStatus.BadConfig, 'Authentication failed')
 				}
 			} else {
-				this.log('debug', `Received message: ${event.data}`)
+				this.log('debug', `Received message: ${JSON.stringify(event.data)}`)
 			}
 			// Optionally, handle other incoming messages.
 		}
 		this.socket.onerror = (err) => {
-			this.log('error', `Socket error: ${err}`)
+			this.log('error', `Socket error: ${JSON.stringify(err)}`)
 			this.updateStatus(InstanceStatus.UnknownError, 'Socket error')
 		}
 		this.socket.onclose = () => {

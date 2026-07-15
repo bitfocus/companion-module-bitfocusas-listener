@@ -11,17 +11,20 @@ Bitfocus Listener is a free application available on the Bitfocus website that e
 With this module, you can control your computer in the following ways:
 
 ### Keyboard Control
+
 - Simulate key presses, key down, and key up events
 - Execute key combinations (e.g., Alt+Tab, Ctrl+C)
 - Type text strings
 - Send special key commands to specific applications (macOS only)
 
 ### Mouse Control
+
 - Set the mouse cursor position
 - Get the current mouse position
 - Perform mouse clicks (left/right, single/double)
 
 ### System Control
+
 - Run shell commands
 - Open files
 - Execute AppleScript commands (macOS only)

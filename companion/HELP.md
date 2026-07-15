@@ -53,14 +53,14 @@ Shows recent connections and actions. Useful when debugging why a command was ig
 
 Use lowercase names where possible. Common special keys:
 
-| Key | Values |
-| --- | --- |
-| Navigation | `up`, `down`, `left`, `right`, `home`, `end`, `pageup`, `pagedown`, `tab`, `backspace`, `delete`, `insert` |
-| Function | `f1` … `f12` |
-| System | `esc`, `enter`, `space`, `print`, `scroll`, `pause`, `break` |
-| Media | `play`, `pause`, `stop`, `next`, `previous`, `volumeup`, `volumedown`, `mute` |
-| Letters / numbers | `a`–`z`, `0`–`9` |
-| Symbols | e.g. `-`, `=`, `[`, `]`, `;`, `'`, `,`, `.`, `/`, `` ` `` |
+| Key               | Values                                                                                                     |
+| ----------------- | ---------------------------------------------------------------------------------------------------------- |
+| Navigation        | `up`, `down`, `left`, `right`, `home`, `end`, `pageup`, `pagedown`, `tab`, `backspace`, `delete`, `insert` |
+| Function          | `f1` … `f12`                                                                                               |
+| System            | `esc`, `enter`, `space`, `print`, `scroll`, `pause`, `break`                                               |
+| Media             | `play`, `pause`, `stop`, `next`, `previous`, `volumeup`, `volumedown`, `mute`                              |
+| Letters / numbers | `a`–`z`, `0`–`9`                                                                                           |
+| Symbols           | e.g. `-`, `=`, `[`, `]`, `;`, `'`, `,`, `.`, `/`, `` ` ``                                                  |
 
 **Modifiers** (for combinations; comma-separated in the action field):
 
