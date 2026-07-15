@@ -174,11 +174,19 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 
 		const socket = this.socket
 		this.socket = null
+
+		// Closing while CONNECTING emits "WebSocket was closed before the connection was
+		// established" — keep a no-op handler so that does not crash the process.
 		socket.onopen = null
 		socket.onmessage = null
-		socket.onerror = null
 		socket.onclose = null
-		socket.close()
+		socket.onerror = () => undefined
+
+		if (socket.readyState === WebSocket.CONNECTING) {
+			socket.terminate()
+		} else if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CLOSING) {
+			socket.close()
+		}
 	}
 
 	// Schedule a reconnection attempt with backoff
