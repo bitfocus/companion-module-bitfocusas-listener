@@ -19,6 +19,8 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	config!: ModuleConfig
 	secrets!: ModuleSecrets
 	state: ListenerState = createEmptyState()
+	/** When false, socket close should not trigger automatic reconnect (destroy / intentional reconnect). */
+	shouldReconnect = true
 	reconnectTimer: NodeJS.Timeout | null = null
 	reconnectAttempts = 0
 	reconnectDelay = 500 // Start with 500ms
@@ -41,22 +43,23 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 
 	// Connect to the Bitfocus Listener WebSocket server.
 	connectSocket(): void {
-		// Clear any existing reconnect timer
-		if (this.reconnectTimer) {
-			clearTimeout(this.reconnectTimer)
-			this.reconnectTimer = null
-		}
+		this.clearReconnectTimer()
 
 		const url = `ws://${this.config.host}:${this.config.port}/ws`
 		this.log('debug', `Connecting to ${url}`)
+		this.shouldReconnect = true
 		this.socket = new WebSocket(url)
-		this.socket.onopen = () => {
+		const socket = this.socket
+
+		socket.onopen = () => {
+			if (this.socket !== socket) return
 			this.log('debug', 'Socket connected')
 			// Reset reconnection attempts on successful connection
 			this.reconnectAttempts = 0
 			this.reconnectDelay = 500
 		}
-		this.socket.onmessage = (event) => {
+		socket.onmessage = (event) => {
+			if (this.socket !== socket) return
 			let msg: Record<string, unknown>
 			try {
 				msg = JSON.parse(event.data as string) as Record<string, unknown>
@@ -66,14 +69,19 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			}
 			this.handleMessage(msg)
 		}
-		this.socket.onerror = (err) => {
+		socket.onerror = (err) => {
+			if (this.socket !== socket) return
 			this.log('error', `Socket error: ${JSON.stringify(err)}`)
 			this.updateStatus(InstanceStatus.UnknownError, 'Socket error')
 		}
-		this.socket.onclose = () => {
+		socket.onclose = () => {
+			if (this.socket === socket) {
+				this.socket = null
+			}
+			if (!this.shouldReconnect) return
+
 			this.log('debug', 'Socket closed')
 			this.updateStatus(InstanceStatus.Disconnected, 'Socket closed')
-			// Attempt to reconnect with backoff strategy
 			this.scheduleReconnect()
 		}
 	}
@@ -82,7 +90,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		switch (msg.type) {
 			case 'authChallenge': {
 				const salt = String(msg.salt ?? '')
-				const hash = this.computeMD5(salt + this.secrets.password)
+				const hash = this.computeMD5(salt + (this.secrets.password ?? ''))
 				this.sendCommand({ type: 'auth', password: hash })
 				return
 			}
@@ -97,8 +105,17 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 				}
 				return
 			}
-			case 'mousePositionUpdate':
+			case 'mousePositionUpdate': {
+				// Continuous updates only while subscription is enabled
+				if (this.config.subscribeMousePosition !== true) return
+				if (applyMousePosition(this.state, msg.x, msg.y)) {
+					this.setVariableValues(stateToVariableValues(this.state))
+					this.checkFeedbacks('mouse_x_above', 'mouse_y_above')
+				}
+				return
+			}
 			case 'mousePositionGetResponse': {
+				// One-shot Get Mouse Position always applies
 				if (applyMousePosition(this.state, msg.x, msg.y)) {
 					this.setVariableValues(stateToVariableValues(this.state))
 					this.checkFeedbacks('mouse_x_above', 'mouse_y_above')
@@ -106,6 +123,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 				return
 			}
 			case 'sysInfoUpdate': {
+				if (this.config.subscribeSysInfo !== true) return
 				if (applySysInfo(this.state, msg)) {
 					this.setVariableValues(stateToVariableValues(this.state))
 					this.checkFeedbacks('cpu_above', 'mem_percent_above', 'processes_above')
@@ -132,18 +150,42 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	}
 
 	applyConfiguredSubscriptions(): void {
-		if (this.config.subscribeSysInfo) {
-			this.sendCommand({ type: 'subscribeSysInfo' })
+		const sysInfo = this.config.subscribeSysInfo === true
+		const mouse = this.config.subscribeMousePosition === true
+
+		this.log('debug', `Applying subscriptions: sysInfo=${sysInfo}, mousePosition=${mouse}`)
+
+		this.sendCommand({ type: sysInfo ? 'subscribeSysInfo' : 'unsubscribeSysInfo' })
+		this.sendCommand({ type: mouse ? 'subscribeMousePosition' : 'unsubscribeMousePosition' })
+	}
+
+	clearReconnectTimer(): void {
+		if (this.reconnectTimer) {
+			clearTimeout(this.reconnectTimer)
+			this.reconnectTimer = null
 		}
-		if (this.config.subscribeMousePosition) {
-			this.sendCommand({ type: 'subscribeMousePosition' })
-		}
+	}
+
+	closeSocket(allowReconnect: boolean): void {
+		this.shouldReconnect = allowReconnect
+		this.clearReconnectTimer()
+
+		if (!this.socket) return
+
+		const socket = this.socket
+		this.socket = null
+		socket.onopen = null
+		socket.onmessage = null
+		socket.onerror = null
+		socket.onclose = null
+		socket.close()
 	}
 
 	// Schedule a reconnection attempt with backoff
 	scheduleReconnect(): void {
-		// Don't schedule a reconnect if we're being destroyed
-		if (!this.socket) return
+		if (!this.shouldReconnect) return
+
+		this.clearReconnectTimer()
 
 		// Calculate the next reconnect delay with backoff
 		this.reconnectAttempts++
@@ -158,6 +200,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 
 		// Schedule the reconnection
 		this.reconnectTimer = setTimeout(() => {
+			if (!this.shouldReconnect) return
 			this.log('debug', `Attempting to reconnect (attempt ${this.reconnectAttempts})`)
 			this.connectSocket()
 		}, actualDelay)
@@ -165,37 +208,19 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 
 	async destroy(): Promise<void> {
 		this.log('debug', 'destroy')
-		// Clear any reconnect timer
-		if (this.reconnectTimer) {
-			clearTimeout(this.reconnectTimer)
-			this.reconnectTimer = null
-		}
-
-		if (this.socket) {
-			this.socket.close()
-			this.socket = null
-		}
+		this.closeSocket(false)
 	}
 
 	async configUpdated(config: ModuleConfig, secrets: ModuleSecrets): Promise<void> {
 		this.config = config
 		this.secrets = secrets
 
-		// Clear any reconnect timer
-		if (this.reconnectTimer) {
-			clearTimeout(this.reconnectTimer)
-			this.reconnectTimer = null
-		}
-
 		// Reset reconnection state
 		this.reconnectAttempts = 0
 		this.reconnectDelay = 500
 
-		// Reconnect socket when config is updated
-		if (this.socket) {
-			this.socket.close()
-			this.socket = null
-		}
+		// Reconnect so Listener drops any previous subscriptions and we re-apply from config
+		this.closeSocket(false)
 		this.connectSocket()
 	}
 
