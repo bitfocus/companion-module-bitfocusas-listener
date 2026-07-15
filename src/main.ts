@@ -21,6 +21,8 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	state: ListenerState = createEmptyState()
 	/** When false, socket close should not trigger automatic reconnect (destroy / intentional reconnect). */
 	shouldReconnect = true
+	/** Avoid logging "Disconnected" on every failed reconnect attempt. */
+	loggedDisconnect = false
 	reconnectTimer: NodeJS.Timeout | null = null
 	reconnectAttempts = 0
 	reconnectDelay = 500 // Start with 500ms
@@ -57,6 +59,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			// Reset reconnection attempts on successful connection
 			this.reconnectAttempts = 0
 			this.reconnectDelay = 500
+			this.loggedDisconnect = false
 		}
 		socket.onmessage = (event) => {
 			if (this.socket !== socket) return
@@ -69,19 +72,19 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			}
 			this.handleMessage(msg)
 		}
-		socket.onerror = (err) => {
-			if (this.socket !== socket) return
-			this.log('error', `Socket error: ${JSON.stringify(err)}`)
-			this.updateStatus(InstanceStatus.UnknownError, 'Socket error')
-		}
+		// ws often fires onerror with an empty object before onclose; log disconnect there instead
+		socket.onerror = () => undefined
 		socket.onclose = () => {
 			if (this.socket === socket) {
 				this.socket = null
 			}
 			if (!this.shouldReconnect) return
 
-			this.log('debug', 'Socket closed')
-			this.updateStatus(InstanceStatus.Disconnected, 'Socket closed')
+			if (!this.loggedDisconnect) {
+				this.loggedDisconnect = true
+				this.log('warn', 'Disconnected')
+			}
+			this.updateStatus(InstanceStatus.Disconnected, 'Disconnected')
 			this.scheduleReconnect()
 		}
 	}
