@@ -49,7 +49,40 @@ const ConvertModifiersToArray: CompanionStaticUpgradeScript<ModuleConfig, Module
 	return result
 }
 
+const AddSubscriptionDefaults: CompanionStaticUpgradeScript<ModuleConfig, ModuleSecrets> = (_context, props) => {
+	const result: CompanionStaticUpgradeResult<ModuleConfig, ModuleSecrets> = {
+		updatedConfig: null,
+		updatedSecrets: null,
+		updatedActions: [],
+		updatedFeedbacks: [],
+	}
+
+	if (!props.config) return result
+
+	const config = props.config as ModuleConfig & {
+		subscribeSysInfo?: boolean
+		subscribeMousePosition?: boolean
+	}
+	let changed = false
+
+	if (config.subscribeSysInfo === undefined) {
+		config.subscribeSysInfo = true
+		changed = true
+	}
+	if (config.subscribeMousePosition === undefined) {
+		config.subscribeMousePosition = false
+		changed = true
+	}
+
+	if (changed) {
+		result.updatedConfig = config
+	}
+
+	return result
+}
+
 export const UpgradeScripts: CompanionStaticUpgradeScript<ModuleConfig, ModuleSecrets>[] = [
 	MovePasswordToSecrets,
 	ConvertModifiersToArray,
+	AddSubscriptionDefaults,
 ]

@@ -3,6 +3,8 @@ import { Regex, type SomeCompanionConfigField } from '@companion-module/base'
 export interface ModuleConfig {
 	host: string
 	port: number
+	subscribeSysInfo: boolean
+	subscribeMousePosition: boolean
 }
 
 export interface ModuleSecrets {
@@ -33,6 +35,22 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			id: 'password',
 			label: 'Password',
 			width: 12,
+		},
+		{
+			type: 'checkbox',
+			id: 'subscribeSysInfo',
+			label: 'Subscribe to System Info',
+			width: 6,
+			default: true,
+			tooltip: 'Receive CPU, memory, and process updates (~5 seconds) for variables and feedbacks',
+		},
+		{
+			type: 'checkbox',
+			id: 'subscribeMousePosition',
+			label: 'Subscribe to Mouse Position',
+			width: 6,
+			default: false,
+			tooltip: 'Receive mouse position updates (~1 second) for variables and feedbacks',
 		},
 	]
 }

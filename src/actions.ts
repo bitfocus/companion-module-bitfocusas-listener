@@ -276,51 +276,5 @@ export function UpdateActions(self: ModuleInstance): void {
 				})
 			},
 		},
-		// Subscribe
-		subscribe: {
-			name: 'Subscribe',
-			options: [
-				{
-					type: 'dropdown',
-					id: 'subType',
-					label: 'Subscription Type',
-					choices: [
-						{ id: 'mousePosition', label: 'Mouse Position' },
-						{ id: 'sysInfo', label: 'System Info' },
-					],
-					default: 'mousePosition',
-					allowCustom: true,
-				},
-			],
-			callback: async (event) => {
-				self.sendCommand({
-					type: 'subscribe',
-					name: event.options.subType,
-				})
-			},
-		},
-		// Unsubscribe
-		unsubscribe: {
-			name: 'Unsubscribe',
-			options: [
-				{
-					type: 'dropdown',
-					id: 'subType',
-					label: 'Subscription Type',
-					choices: [
-						{ id: 'mousePosition', label: 'Mouse Position' },
-						{ id: 'sysInfo', label: 'System Info' },
-					],
-					default: 'mousePosition',
-					allowCustom: true,
-				},
-			],
-			callback: async (event) => {
-				self.sendCommand({
-					type: 'unsubscribe',
-					name: event.options.subType,
-				})
-			},
-		},
 	})
 }
