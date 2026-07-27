@@ -97,6 +97,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	// Send a command via the WebSocket connection.
 	sendCommand(cmd: Record<string, unknown>): void {
 		if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+			this.log('debug', `Sending WebSocket command: ${JSON.stringify(cmd)}`)
 			this.socket.send(JSON.stringify(cmd))
 		} else {
 			this.log('error', 'Socket not connected')

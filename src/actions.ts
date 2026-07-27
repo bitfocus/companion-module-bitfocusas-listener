@@ -161,12 +161,49 @@ export function UpdateActions(self: ModuleInstance): void {
 					id: 'shell',
 					label: 'Shell Command',
 					default: 'dir',
+					tooltip:
+						'The command string to execute. Quotes, environment variables, and JSON are supported automatically when Base64 mode is selected.',
+				},
+				{
+					type: 'dropdown',
+					id: 'mode',
+					label: 'Execution Mode / Encoding',
+					tooltip:
+						'Base64 encoding prevents syntax errors when commands contain double/single quotes, backslashes, or JSON payloads.',
+					description:
+						'Select CMD Base64 for Windows CMD commands (supports %USERPROFILE%, quotes, and redirects). Select PowerShell Base64 for PowerShell syntax ($env).',
+					choices: [
+						{ id: 'cmd_b64', label: 'CMD Base64 (Windows - Supports CMD syntax, %ENV%, quotes & redirects)' },
+						{ id: 'powershell_b64', label: 'PowerShell Base64 (Windows - Supports PowerShell syntax, $env)' },
+						{ id: 'bash_b64', label: 'Bash Base64 (macOS / Linux - Fixes all quotes & JSON)' },
+						{ id: 'direct', label: 'Direct / Raw (No encoding)' },
+					],
+					default: 'cmd_b64',
 				},
 			],
 			callback: async (event) => {
+				const rawShell = (event.options.shell as string) || ''
+				const shell = await self.parseVariablesInString(rawShell)
+
+				let targetCommand = shell
+				const mode = event.options.mode || 'cmd_b64'
+
+				if (mode === 'cmd_b64') {
+					const innerB64 = Buffer.from(shell, 'utf16le').toString('base64')
+					const psScript = `$b=[System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String('${innerB64}')); cmd.exe /c $b`
+					const fullB64 = Buffer.from(psScript, 'utf16le').toString('base64')
+					targetCommand = `powershell -NoProfile -NonInteractive -EncodedCommand ${fullB64}`
+				} else if (mode === 'powershell_b64') {
+					const b64 = Buffer.from(shell, 'utf16le').toString('base64')
+					targetCommand = `powershell -NoProfile -NonInteractive -EncodedCommand ${b64}`
+				} else if (mode === 'bash_b64') {
+					const b64 = Buffer.from(shell, 'utf-8').toString('base64')
+					targetCommand = `echo "${b64}" | base64 -d | bash`
+				}
+
 				self.sendCommand({
 					type: 'shellRun',
-					shell: event.options.shell,
+					shell: targetCommand,
 				})
 			},
 		},
