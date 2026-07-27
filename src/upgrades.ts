@@ -2,15 +2,22 @@ import type { CompanionStaticUpgradeScript } from '@companion-module/base'
 import type { ModuleConfig } from './config.js'
 
 export const UpgradeScripts: CompanionStaticUpgradeScript<ModuleConfig>[] = [
-	/*
-	 * Place your upgrade scripts here
-	 * Remember that once it has been added it cannot be removed!
-	 */
-	// function (context, props) {
-	// 	return {
-	// 		updatedConfig: null,
-	// 		updatedActions: [],
-	// 		updatedFeedbacks: [],
-	// 	}
-	// },
+	function (_context, props) {
+		const updatedActions = []
+
+		for (const action of props.actions) {
+			if (action.actionId === 'shell_command') {
+				if (action.options.mode === undefined) {
+					action.options.mode = 'cmd_b64'
+					updatedActions.push(action)
+				}
+			}
+		}
+
+		return {
+			updatedConfig: null,
+			updatedActions,
+			updatedFeedbacks: [],
+		}
+	},
 ]
