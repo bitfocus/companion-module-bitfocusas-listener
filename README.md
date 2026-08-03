@@ -6,6 +6,8 @@ This module integrates [Bitfocus Buttons](https://bitfocus.io/buttons) and [Bitf
 
 Bitfocus Listener is a free application available on the Bitfocus website that enables remote control of your computer. This Companion module connects to the Listener application via WebSocket and allows you to trigger various computer control actions from your Companion interface.
 
+See [companion/CHANGELOG.md](companion/CHANGELOG.md) for the full release history.
+
 ## Features
 
 With this module, you can control your computer in the following ways:
