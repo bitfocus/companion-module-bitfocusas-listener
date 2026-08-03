@@ -24,7 +24,7 @@
 	},
 	"dependencies": {
 		"@companion-module/base": "^1.14.1",
-		"ws": "^8.21.0"
+		"ws": "^8.21.1"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
@@ -34,10 +34,10 @@
 		"eslint": "^9.39.5",
 		"husky": "^9.1.7",
 		"lint-staged": "^15.5.2",
-		"prettier": "^3.9.5",
+		"prettier": "^3.9.6",
 		"rimraf": "^6.1.3",
 		"typescript": "~5.5.4",
-		"typescript-eslint": "^8.63.0"
+		"typescript-eslint": "^8.65.0"
 	},
 	"packageManager": "yarn@4.17.1",
 	"prettier": "@companion-module/tools/.prettierrc.json",
