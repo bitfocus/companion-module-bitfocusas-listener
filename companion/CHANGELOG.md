@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Presets for common keys across Navigation, Function, Media, System, and more
 - Support for hostnames (not only IP addresses) in Target Host
 - Companion variable substitution in text-input actions (key string, shell, AppleScript, open file, process name)
+- Multiline input for the macOS AppleScript action (real multi-statement scripts with newlines)
 - Full module help text (`HELP.md`)
 
 ### Changed

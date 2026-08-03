@@ -84,7 +84,14 @@ Examples:
 - **Key String** — type a text string into the focused field / application (Companion variables supported)
 - **Volume Up / Down / Mute** — media volume keys (same as Key Press with `volumeup` / `volumedown` / `mute`)
 - **macOS Key Press Process** _(macOS only)_ — activate an application by name, then send a key (with optional modifiers). Process name examples: `Finder`, `Google Chrome`, `Microsoft PowerPoint`
-- **macOS AppleScript** _(macOS only)_ — run an AppleScript snippet on the Listener machine (Companion variables supported)
+- **macOS AppleScript** _(macOS only)_ — run an AppleScript snippet on the Listener machine (Companion variables supported). Use a multiline script with one statement per line, e.g.:
+
+  ```applescript
+  display dialog "Hello World"
+  display alert "Hello World"
+  ```
+
+  Putting two statements on one line without a newline is invalid AppleScript and will fail.
 
 **Mouse**
 

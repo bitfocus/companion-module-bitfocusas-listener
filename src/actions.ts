@@ -135,9 +135,11 @@ export function UpdateActions(self: ModuleInstance): void {
 				{
 					type: 'textinput',
 					id: 'script',
-					label: 'AppleScript Command',
+					label: 'AppleScript',
 					default: 'tell application "Finder" to activate',
 					useVariables: true,
+					multiline: true,
+					tooltip: 'Full AppleScript. Separate statements with new lines.',
 				},
 			],
 			callback: async (event) => {
