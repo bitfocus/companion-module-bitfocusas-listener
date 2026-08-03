@@ -9,7 +9,7 @@ function thresholdOptions(label: string, defaultValue: number) {
 			label,
 			default: defaultValue,
 			min: 0,
-			max: 100000000,
+			max: 100,
 		},
 	]
 }

@@ -82,6 +82,9 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			if (this.socket === socket) {
 				this.socket = null
 			}
+			this.clearPendingMouseAdjust()
+			this.clearTelemetryState({ mouse: true, sysInfo: true })
+
 			if (!this.shouldReconnect) return
 
 			if (!this.loggedDisconnect) {
@@ -108,7 +111,9 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 					this.applyConfiguredSubscriptions()
 				} else {
 					this.log('error', 'Authentication failed')
-					this.updateStatus(InstanceStatus.BadConfig, 'Authentication failed')
+					this.updateStatus(InstanceStatus.AuthenticationFailure, 'Authentication failed')
+					// Stop reconnecting until the user updates the password / config
+					this.closeSocket(false)
 				}
 				return
 			}
@@ -116,16 +121,14 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 				// Continuous updates only while subscription is enabled
 				if (this.config.subscribeMousePosition !== true) return
 				if (applyMousePosition(this.state, msg.x, msg.y)) {
-					this.setVariableValues(stateToVariableValues(this.state))
-					this.checkFeedbacks('mouse_x_above', 'mouse_y_above')
+					this.publishMouseState()
 				}
 				return
 			}
 			case 'mousePositionGetResponse': {
 				// One-shot Get Mouse Position always applies
 				if (applyMousePosition(this.state, msg.x, msg.y)) {
-					this.setVariableValues(stateToVariableValues(this.state))
-					this.checkFeedbacks('mouse_x_above', 'mouse_y_above')
+					this.publishMouseState()
 				}
 				const pending = this.pendingMouseAdjust
 				if (pending) {
@@ -137,8 +140,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			case 'sysInfoUpdate': {
 				if (this.config.subscribeSysInfo !== true) return
 				if (applySysInfo(this.state, msg)) {
-					this.setVariableValues(stateToVariableValues(this.state))
-					this.checkFeedbacks('cpu_above', 'mem_percent_above', 'processes_above')
+					this.publishSysInfoState()
 				}
 				return
 			}
@@ -171,6 +173,8 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		if (this.pendingMouseAdjust) {
 			this.pendingMouseAdjust.dx += dx
 			this.pendingMouseAdjust.dy += dy
+			// Re-request in case the previous get was lost (disconnect / failed send)
+			this.sendCommand({ type: 'mousePositionGet' })
 			return
 		}
 
@@ -197,8 +201,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			y: String(y),
 		})
 		if (applyMousePosition(this.state, x, y)) {
-			this.setVariableValues(stateToVariableValues(this.state))
-			this.checkFeedbacks('mouse_x_above', 'mouse_y_above')
+			this.publishMouseState()
 		}
 	}
 
@@ -210,6 +213,60 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 
 		this.sendCommand({ type: sysInfo ? 'subscribeSysInfo' : 'unsubscribeSysInfo' })
 		this.sendCommand({ type: mouse ? 'subscribeMousePosition' : 'unsubscribeMousePosition' })
+
+		// Drop stale values for anything we are not subscribed to
+		this.clearTelemetryState({ mouse: !mouse, sysInfo: !sysInfo })
+	}
+
+	clearPendingMouseAdjust(): void {
+		this.pendingMouseAdjust = null
+	}
+
+	clearTelemetryState(parts: { mouse: boolean; sysInfo: boolean }): void {
+		let changed = false
+
+		if (parts.mouse) {
+			if (this.state.mouseX !== null || this.state.mouseY !== null) {
+				this.state.mouseX = null
+				this.state.mouseY = null
+				changed = true
+			}
+		}
+
+		if (parts.sysInfo) {
+			if (
+				this.state.cpu !== null ||
+				this.state.maxCpu !== null ||
+				this.state.mem !== null ||
+				this.state.maxMem !== null ||
+				this.state.memPercent !== null ||
+				this.state.processes !== null
+			) {
+				this.state.cpu = null
+				this.state.maxCpu = null
+				this.state.mem = null
+				this.state.maxMem = null
+				this.state.memPercent = null
+				this.state.processes = null
+				changed = true
+			}
+		}
+
+		if (!changed) return
+
+		this.setVariableValues(stateToVariableValues(this.state))
+		if (parts.mouse) this.checkFeedbacks('mouse_x_above', 'mouse_y_above')
+		if (parts.sysInfo) this.checkFeedbacks('cpu_above', 'mem_percent_above', 'processes_above')
+	}
+
+	publishMouseState(): void {
+		this.setVariableValues(stateToVariableValues(this.state))
+		this.checkFeedbacks('mouse_x_above', 'mouse_y_above')
+	}
+
+	publishSysInfoState(): void {
+		this.setVariableValues(stateToVariableValues(this.state))
+		this.checkFeedbacks('cpu_above', 'mem_percent_above', 'processes_above')
 	}
 
 	clearReconnectTimer(): void {
@@ -222,6 +279,8 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	closeSocket(allowReconnect: boolean): void {
 		this.shouldReconnect = allowReconnect
 		this.clearReconnectTimer()
+		this.clearPendingMouseAdjust()
+		this.clearTelemetryState({ mouse: true, sysInfo: true })
 
 		if (!this.socket) return
 

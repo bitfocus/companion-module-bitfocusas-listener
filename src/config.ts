@@ -19,6 +19,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			label: 'Target Host',
 			width: 8,
 			regex: Regex.HOSTNAME,
+			default: '127.0.0.1',
 			tooltip: 'IP address or hostname of the computer running Bitfocus Listener',
 		},
 		{
