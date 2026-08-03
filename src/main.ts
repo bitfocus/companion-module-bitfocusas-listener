@@ -1,91 +1,151 @@
 import { InstanceBase, runEntrypoint, InstanceStatus, type SomeCompanionConfigField } from '@companion-module/base'
 import { WebSocket } from 'ws'
-import { GetConfigFields, type ModuleConfig } from './config.js'
-import { UpdateVariableDefinitions } from './variables.js'
+import { GetConfigFields, type ModuleConfig, type ModuleSecrets } from './config.js'
+import {
+	UpdateVariableDefinitions,
+	applyMousePosition,
+	applySysInfo,
+	createEmptyState,
+	stateToVariableValues,
+	type ListenerState,
+} from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
+import { UpdatePresets } from './presets.js'
 import { createHash } from 'node:crypto'
 
-export class ModuleInstance extends InstanceBase<ModuleConfig> {
+export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	socket: WebSocket | null = null
 	config!: ModuleConfig
+	secrets!: ModuleSecrets
+	state: ListenerState = createEmptyState()
+	/** When false, socket close should not trigger automatic reconnect (destroy / intentional reconnect). */
+	shouldReconnect = true
+	/** Avoid logging "Disconnected" on every failed reconnect attempt. */
+	loggedDisconnect = false
 	reconnectTimer: NodeJS.Timeout | null = null
 	reconnectAttempts = 0
 	reconnectDelay = 500 // Start with 500ms
 	maxReconnectDelay = 10000 // Cap at 10 seconds
 	reconnectIncrementMs = 500 // Increment by 500ms
 	absoluteMaxReconnectDelay = 15000 // Absolute max of 15 seconds
+	/** Pending relative mouse move, applied after the next mousePositionGetResponse. */
+	pendingMouseAdjust: { dx: number; dy: number } | null = null
 
-	async init(config: ModuleConfig): Promise<void> {
+	async init(config: ModuleConfig, _isFirstInit: boolean, secrets: ModuleSecrets): Promise<void> {
 		this.config = config
+		this.secrets = secrets
+
+		this.updateActions()
+		this.updateFeedbacks()
+		this.updateVariableDefinitions()
+		this.updatePresets()
 
 		// Initially, set status to Warning until authenticated.
 		this.updateStatus(InstanceStatus.UnknownWarning)
 		this.connectSocket()
-		this.updateActions()
-		this.updateFeedbacks()
-		this.updateVariableDefinitions()
 	}
 
 	// Connect to the Bitfocus Listener WebSocket server.
 	connectSocket(): void {
-		// Clear any existing reconnect timer
-		if (this.reconnectTimer) {
-			clearTimeout(this.reconnectTimer)
-			this.reconnectTimer = null
-		}
+		this.clearReconnectTimer()
 
 		const url = `ws://${this.config.host}:${this.config.port}/ws`
 		this.log('debug', `Connecting to ${url}`)
+		this.shouldReconnect = true
 		this.socket = new WebSocket(url)
-		this.socket.onopen = () => {
+		const socket = this.socket
+
+		socket.onopen = () => {
+			if (this.socket !== socket) return
 			this.log('debug', 'Socket connected')
 			// Reset reconnection attempts on successful connection
 			this.reconnectAttempts = 0
 			this.reconnectDelay = 500
+			this.loggedDisconnect = false
 		}
-		this.socket.onmessage = (event) => {
-			// biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-			let msg
+		socket.onmessage = (event) => {
+			if (this.socket !== socket) return
+			let msg: Record<string, unknown>
 			try {
-				msg = JSON.parse(event.data as string)
-			} catch (e) {
+				msg = JSON.parse(event.data as string) as Record<string, unknown>
+			} catch (_e) {
 				this.log('error', 'Invalid JSON received')
 				return
 			}
-			// When we receive an authChallenge, compute MD5(salt+password) and send auth.
-			if (msg.type === 'authChallenge') {
-				const salt = msg.salt
-				const hash = this.computeMD5(salt + this.config.password)
+			this.handleMessage(msg)
+		}
+		// ws often fires onerror with an empty object before onclose; log disconnect there instead
+		socket.onerror = () => undefined
+		socket.onclose = () => {
+			if (this.socket === socket) {
+				this.socket = null
+			}
+			this.clearPendingMouseAdjust()
+			this.clearTelemetryState({ mouse: true, sysInfo: true })
+
+			if (!this.shouldReconnect) return
+
+			if (!this.loggedDisconnect) {
+				this.loggedDisconnect = true
+				this.log('warn', 'Disconnected')
+			}
+			this.updateStatus(InstanceStatus.Disconnected, 'Disconnected')
+			this.scheduleReconnect()
+		}
+	}
+
+	handleMessage(msg: Record<string, unknown>): void {
+		switch (msg.type) {
+			case 'authChallenge': {
+				const salt = typeof msg.salt === 'string' ? msg.salt : ''
+				const hash = this.computeMD5(salt + (this.secrets.password ?? ''))
 				this.sendCommand({ type: 'auth', password: hash })
-			} else if (msg.type === 'authResponse') {
-				// Update status based on authentication outcome.
+				return
+			}
+			case 'authResponse': {
 				if (msg.status === 'authenticated') {
 					this.log('debug', 'Authentication successful')
 					this.updateStatus(InstanceStatus.Ok)
-					// send a subscribeSysInfo command to get system info.
-					this.sendCommand({
-						type: 'subscribeSysInfo',
-					})
+					this.applyConfiguredSubscriptions()
 				} else {
 					this.log('error', 'Authentication failed')
-					this.updateStatus(InstanceStatus.BadConfig, 'Authentication failed')
+					this.updateStatus(InstanceStatus.AuthenticationFailure, 'Authentication failed')
+					// Stop reconnecting until the user updates the password / config
+					this.closeSocket(false)
 				}
-			} else {
-				this.log('debug', `Received message: ${event.data}`)
+				return
 			}
-			// Optionally, handle other incoming messages.
-		}
-		this.socket.onerror = (err) => {
-			this.log('error', `Socket error: ${err}`)
-			this.updateStatus(InstanceStatus.UnknownError, 'Socket error')
-		}
-		this.socket.onclose = () => {
-			this.log('debug', 'Socket closed')
-			this.updateStatus(InstanceStatus.Disconnected, 'Socket closed')
-			// Attempt to reconnect with backoff strategy
-			this.scheduleReconnect()
+			case 'mousePositionUpdate': {
+				// Continuous updates only while subscription is enabled
+				if (this.config.subscribeMousePosition !== true) return
+				if (applyMousePosition(this.state, msg.x, msg.y)) {
+					this.publishMouseState()
+				}
+				return
+			}
+			case 'mousePositionGetResponse': {
+				// One-shot Get Mouse Position always applies
+				if (applyMousePosition(this.state, msg.x, msg.y)) {
+					this.publishMouseState()
+				}
+				const pending = this.pendingMouseAdjust
+				if (pending) {
+					this.pendingMouseAdjust = null
+					this.applyMouseAdjust(pending.dx, pending.dy)
+				}
+				return
+			}
+			case 'sysInfoUpdate': {
+				if (this.config.subscribeSysInfo !== true) return
+				if (applySysInfo(this.state, msg)) {
+					this.publishSysInfoState()
+				}
+				return
+			}
+			default:
+				this.log('debug', `Received message: ${JSON.stringify(msg)}`)
 		}
 	}
 
@@ -103,10 +163,149 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		}
 	}
 
+	/** Move the cursor by a relative offset. Uses known position, or fetches it first. */
+	adjustMousePosition(dx: number, dy: number): void {
+		if (this.state.mouseX !== null && this.state.mouseY !== null) {
+			this.applyMouseAdjust(dx, dy)
+			return
+		}
+
+		if (this.pendingMouseAdjust) {
+			this.pendingMouseAdjust.dx += dx
+			this.pendingMouseAdjust.dy += dy
+			// Re-request in case the previous get was lost (disconnect / failed send)
+			this.sendCommand({ type: 'mousePositionGet' })
+			return
+		}
+
+		this.pendingMouseAdjust = { dx, dy }
+		this.sendCommand({ type: 'mousePositionGet' })
+	}
+
+	applyMouseAdjust(dx: number, dy: number): void {
+		if (this.state.mouseX === null || this.state.mouseY === null) {
+			this.log('warn', 'Cannot adjust mouse position: current position unknown')
+			return
+		}
+
+		const x = Math.round(this.state.mouseX + dx)
+		const y = Math.round(this.state.mouseY + dy)
+		this.setMousePosition(x, y)
+	}
+
+	/** Absolute mouse move; also updates local state so subsequent adjusts stay in sync. */
+	setMousePosition(x: number, y: number): void {
+		this.sendCommand({
+			type: 'mousePositionSet',
+			x: String(x),
+			y: String(y),
+		})
+		if (applyMousePosition(this.state, x, y)) {
+			this.publishMouseState()
+		}
+	}
+
+	applyConfiguredSubscriptions(): void {
+		const sysInfo = this.config.subscribeSysInfo === true
+		const mouse = this.config.subscribeMousePosition === true
+
+		this.log('debug', `Applying subscriptions: sysInfo=${sysInfo}, mousePosition=${mouse}`)
+
+		this.sendCommand({ type: sysInfo ? 'subscribeSysInfo' : 'unsubscribeSysInfo' })
+		this.sendCommand({ type: mouse ? 'subscribeMousePosition' : 'unsubscribeMousePosition' })
+
+		// Drop stale values for anything we are not subscribed to
+		this.clearTelemetryState({ mouse: !mouse, sysInfo: !sysInfo })
+	}
+
+	clearPendingMouseAdjust(): void {
+		this.pendingMouseAdjust = null
+	}
+
+	clearTelemetryState(parts: { mouse: boolean; sysInfo: boolean }): void {
+		let changed = false
+
+		if (parts.mouse) {
+			if (this.state.mouseX !== null || this.state.mouseY !== null) {
+				this.state.mouseX = null
+				this.state.mouseY = null
+				changed = true
+			}
+		}
+
+		if (parts.sysInfo) {
+			if (
+				this.state.cpu !== null ||
+				this.state.maxCpu !== null ||
+				this.state.mem !== null ||
+				this.state.maxMem !== null ||
+				this.state.memPercent !== null ||
+				this.state.processes !== null
+			) {
+				this.state.cpu = null
+				this.state.maxCpu = null
+				this.state.mem = null
+				this.state.maxMem = null
+				this.state.memPercent = null
+				this.state.processes = null
+				changed = true
+			}
+		}
+
+		if (!changed) return
+
+		this.setVariableValues(stateToVariableValues(this.state))
+		if (parts.mouse) this.checkFeedbacks('mouse_x_above', 'mouse_y_above')
+		if (parts.sysInfo) this.checkFeedbacks('cpu_above', 'mem_percent_above', 'processes_above')
+	}
+
+	publishMouseState(): void {
+		this.setVariableValues(stateToVariableValues(this.state))
+		this.checkFeedbacks('mouse_x_above', 'mouse_y_above')
+	}
+
+	publishSysInfoState(): void {
+		this.setVariableValues(stateToVariableValues(this.state))
+		this.checkFeedbacks('cpu_above', 'mem_percent_above', 'processes_above')
+	}
+
+	clearReconnectTimer(): void {
+		if (this.reconnectTimer) {
+			clearTimeout(this.reconnectTimer)
+			this.reconnectTimer = null
+		}
+	}
+
+	closeSocket(allowReconnect: boolean): void {
+		this.shouldReconnect = allowReconnect
+		this.clearReconnectTimer()
+		this.clearPendingMouseAdjust()
+		this.clearTelemetryState({ mouse: true, sysInfo: true })
+
+		if (!this.socket) return
+
+		const socket = this.socket
+		this.socket = null
+
+		// Closing while CONNECTING emits "WebSocket was closed before the connection was
+		// established" — keep a no-op handler so that does not crash the process.
+		socket.onopen = null
+		socket.onmessage = null
+		socket.onclose = null
+		socket.onerror = () => undefined
+
+		if (socket.readyState === WebSocket.CONNECTING) {
+			socket.terminate()
+		} else if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CLOSING) {
+			socket.close()
+		}
+	}
+
 	// Schedule a reconnection attempt with backoff
 	scheduleReconnect(): void {
-		// Don't schedule a reconnect if we're being destroyed
-		if (!this.socket) return
+		if (!this.shouldReconnect) return
+
+		this.clearReconnectTimer()
 
 		// Calculate the next reconnect delay with backoff
 		this.reconnectAttempts++
@@ -121,6 +320,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 
 		// Schedule the reconnection
 		this.reconnectTimer = setTimeout(() => {
+			if (!this.shouldReconnect) return
 			this.log('debug', `Attempting to reconnect (attempt ${this.reconnectAttempts})`)
 			this.connectSocket()
 		}, actualDelay)
@@ -128,36 +328,19 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 
 	async destroy(): Promise<void> {
 		this.log('debug', 'destroy')
-		// Clear any reconnect timer
-		if (this.reconnectTimer) {
-			clearTimeout(this.reconnectTimer)
-			this.reconnectTimer = null
-		}
-
-		if (this.socket) {
-			this.socket.close()
-			this.socket = null
-		}
+		this.closeSocket(false)
 	}
 
-	async configUpdated(config: ModuleConfig): Promise<void> {
+	async configUpdated(config: ModuleConfig, secrets: ModuleSecrets): Promise<void> {
 		this.config = config
-
-		// Clear any reconnect timer
-		if (this.reconnectTimer) {
-			clearTimeout(this.reconnectTimer)
-			this.reconnectTimer = null
-		}
+		this.secrets = secrets
 
 		// Reset reconnection state
 		this.reconnectAttempts = 0
 		this.reconnectDelay = 500
 
-		// Reconnect socket when config is updated
-		if (this.socket) {
-			this.socket.close()
-			this.socket = null
-		}
+		// Reconnect so Listener drops any previous subscriptions and we re-apply from config
+		this.closeSocket(false)
 		this.connectSocket()
 	}
 
@@ -175,6 +358,10 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 
 	updateVariableDefinitions(): void {
 		UpdateVariableDefinitions(this)
+	}
+
+	updatePresets(): void {
+		UpdatePresets(this)
 	}
 }
 

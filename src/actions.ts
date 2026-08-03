@@ -1,4 +1,28 @@
 import type { ModuleInstance } from './main.js'
+import {
+	DEFAULT_COMBINATION_KEY,
+	DEFAULT_KEY,
+	DEFAULT_MODIFIERS,
+	KEY_CHOICES,
+	MODIFIER_CHOICES,
+	normalizeModifiers,
+} from './keys.js'
+
+const KEY_DROPDOWN = {
+	type: 'dropdown' as const,
+	choices: KEY_CHOICES,
+	allowCustom: true,
+	minChoicesForSearch: 0,
+}
+
+const MODIFIER_DROPDOWN = {
+	type: 'multidropdown' as const,
+	id: 'modifiers',
+	label: 'Modifiers',
+	choices: MODIFIER_CHOICES,
+	default: DEFAULT_MODIFIERS,
+	minChoicesForSearch: 0,
+}
 
 export function UpdateActions(self: ModuleInstance): void {
 	self.setActionDefinitions({
@@ -7,10 +31,10 @@ export function UpdateActions(self: ModuleInstance): void {
 			name: 'Key Press',
 			options: [
 				{
-					type: 'textinput',
+					...KEY_DROPDOWN,
 					id: 'key',
 					label: 'Key to Press',
-					default: '',
+					default: DEFAULT_KEY,
 				},
 			],
 			callback: async (event) => {
@@ -25,10 +49,10 @@ export function UpdateActions(self: ModuleInstance): void {
 			name: 'Key Down',
 			options: [
 				{
-					type: 'textinput',
+					...KEY_DROPDOWN,
 					id: 'key',
 					label: 'Key to Press Down',
-					default: '',
+					default: DEFAULT_KEY,
 				},
 			],
 			callback: async (event) => {
@@ -43,10 +67,10 @@ export function UpdateActions(self: ModuleInstance): void {
 			name: 'Key Up',
 			options: [
 				{
-					type: 'textinput',
+					...KEY_DROPDOWN,
 					id: 'key',
 					label: 'Key to Release',
-					default: '',
+					default: DEFAULT_KEY,
 				},
 			],
 			callback: async (event) => {
@@ -61,70 +85,61 @@ export function UpdateActions(self: ModuleInstance): void {
 			name: 'Key Combination Press',
 			options: [
 				{
-					type: 'textinput',
+					...KEY_DROPDOWN,
 					id: 'key',
 					label: 'Key',
-					default: 'tab',
+					default: DEFAULT_COMBINATION_KEY,
 				},
-				{
-					type: 'textinput',
-					id: 'modifiers',
-					label: 'Modifiers (comma separated)',
-					default: 'alt',
-				},
+				MODIFIER_DROPDOWN,
 			],
 			callback: async (event) => {
-				const mods = (event.options.modifiers as string).split(',').map((s: string) => s.trim())
 				self.sendCommand({
 					type: 'keyCombinationPress',
 					key: event.options.key,
-					modifiers: mods,
+					modifiers: normalizeModifiers(event.options.modifiers),
 				})
 			},
 		},
-		// OSX Key Press Process (OSX only)
+		// macOS - Key Press Process (macOS only)
 		osx_key_press_process: {
-			name: 'OSX Key Press Process (OSX only)',
+			name: 'macOS - Key Press Process (macOS only)',
 			options: [
 				{
-					type: 'textinput',
+					...KEY_DROPDOWN,
 					id: 'key',
 					label: 'Key',
-					default: 'tab',
+					default: DEFAULT_COMBINATION_KEY,
 				},
-				{
-					type: 'textinput',
-					id: 'modifiers',
-					label: 'Modifiers (comma separated)',
-					default: 'alt',
-				},
+				MODIFIER_DROPDOWN,
 				{
 					type: 'textinput',
 					id: 'processName',
 					label: 'Process Name',
 					default: '',
+					useVariables: true,
 				},
 			],
 			callback: async (event) => {
-				const modarr: string = event.options.modifiers as string
-				const mods = modarr.split(',').map((s: string) => s.trim())
 				self.sendCommand({
 					type: 'osxKeyPressProcess',
 					key: event.options.key,
-					modifiers: mods,
+					modifiers: normalizeModifiers(event.options.modifiers),
 					processName: event.options.processName,
 				})
 			},
 		},
-		// OSX AppleScript (OSX only)
+		// macOS - AppleScript (macOS only)
 		osx_applescript: {
-			name: 'OSX AppleScript (OSX only)',
+			name: 'macOS - AppleScript (macOS only)',
 			options: [
 				{
 					type: 'textinput',
 					id: 'script',
-					label: 'AppleScript Command',
+					label: 'AppleScript',
 					default: 'tell application "Finder" to activate',
+					useVariables: true,
+					multiline: true,
+					tooltip: 'Full AppleScript. Separate statements with new lines.',
 				},
 			],
 			callback: async (event) => {
@@ -143,6 +158,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					id: 'msg',
 					label: 'String to Type',
 					default: '',
+					useVariables: true,
 				},
 			],
 			callback: async (event) => {
@@ -161,6 +177,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					id: 'shell',
 					label: 'Shell Command',
 					default: 'dir',
+					useVariables: true,
 				},
 			],
 			callback: async (event) => {
@@ -179,6 +196,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					id: 'path',
 					label: 'File Path',
 					default: '',
+					useVariables: true,
 				},
 			],
 			callback: async (event) => {
@@ -198,7 +216,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					label: 'X Position',
 					default: 500,
 					min: 0,
-					max: 2000,
+					max: 100000,
 				},
 				{
 					type: 'number',
@@ -206,15 +224,38 @@ export function UpdateActions(self: ModuleInstance): void {
 					label: 'Y Position',
 					default: 500,
 					min: 0,
-					max: 2000,
+					max: 100000,
 				},
 			],
 			callback: async (event) => {
-				self.sendCommand({
-					type: 'mousePositionSet',
-					x: (event.options.x as number).toString(),
-					y: (event.options.y as number).toString(),
-				})
+				self.setMousePosition(Number(event.options.x), Number(event.options.y))
+			},
+		},
+		// Adjust Mouse Position (relative offset)
+		adjust_mouse_position: {
+			name: 'Adjust Mouse Position',
+			options: [
+				{
+					type: 'number',
+					id: 'x',
+					label: 'X Offset',
+					default: 0,
+					min: -100000,
+					max: 100000,
+					tooltip: 'Positive moves right, negative moves left',
+				},
+				{
+					type: 'number',
+					id: 'y',
+					label: 'Y Offset',
+					default: 0,
+					min: -100000,
+					max: 100000,
+					tooltip: 'Positive moves down, negative moves up',
+				},
+			],
+			callback: async (event) => {
+				self.adjustMousePosition(Number(event.options.x), Number(event.options.y))
 			},
 		},
 		// Get Mouse Position
@@ -257,42 +298,6 @@ export function UpdateActions(self: ModuleInstance): void {
 					type: 'mouseClick',
 					button: event.options.button,
 					double: event.options.double,
-				})
-			},
-		},
-		// Subscribe (with input for subscription type)
-		subscribe: {
-			name: 'Subscribe',
-			options: [
-				{
-					type: 'textinput',
-					id: 'subType',
-					label: 'Subscription Type (e.g., mousePosition or sysInfo)',
-					default: 'mousePosition',
-				},
-			],
-			callback: async (event) => {
-				self.sendCommand({
-					type: 'subscribe',
-					name: event.options.subType,
-				})
-			},
-		},
-		// Unsubscribe (with input for subscription type)
-		unsubscribe: {
-			name: 'Unsubscribe',
-			options: [
-				{
-					type: 'textinput',
-					id: 'subType',
-					label: 'Subscription Type (e.g., mousePosition or sysInfo)',
-					default: 'mousePosition',
-				},
-			],
-			callback: async (event) => {
-				self.sendCommand({
-					type: 'unsubscribe',
-					name: event.options.subType,
 				})
 			},
 		},

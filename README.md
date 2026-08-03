@@ -6,26 +6,31 @@ This module integrates [Bitfocus Buttons](https://bitfocus.io/buttons) and [Bitf
 
 Bitfocus Listener is a free application available on the Bitfocus website that enables remote control of your computer. This Companion module connects to the Listener application via WebSocket and allows you to trigger various computer control actions from your Companion interface.
 
+See [companion/CHANGELOG.md](companion/CHANGELOG.md) for the full release history.
+
 ## Features
 
 With this module, you can control your computer in the following ways:
 
 ### Keyboard Control
+
 - Simulate key presses, key down, and key up events
 - Execute key combinations (e.g., Alt+Tab, Ctrl+C)
 - Type text strings
 - Send special key commands to specific applications (macOS only)
 
 ### Mouse Control
+
 - Set the mouse cursor position
 - Get the current mouse position
 - Perform mouse clicks (left/right, single/double)
 
 ### System Control
+
 - Run shell commands
 - Open files
 - Execute AppleScript commands (macOS only)
-- Subscribe to system events and information
+- Optionally subscribe to system info and mouse position for variables / feedbacks
 
 ## Configuration
 
@@ -33,9 +38,11 @@ To use this module, you need to:
 
 1. Download and install the [Bitfocus Listener](https://bitfocus.io) application on the computer you want to control
 2. Configure the module with:
-   - **Target IP**: The IP address of the computer running Listener
+   - **Target Host**: IP address or hostname of the computer running Listener
    - **Target Port**: The port Listener is using (default: 12001)
    - **Password**: The authentication password set in Listener
+   - **Subscribe to System Info**: Enable continuous CPU / memory / process updates (default on)
+   - **Subscribe to Mouse Position**: Enable continuous mouse X/Y updates (default off)
 
 ## Use Cases
 
