@@ -47,9 +47,11 @@ Shows recent connections and actions. Useful when debugging why a command was ig
 
 ### Platform notes
 
-- **macOS** — Listener needs Accessibility (and related) permission for keyboard / mouse automation. Approve Bitfocus Listener in **System Settings → Privacy & Security** if prompted.
-- **Windows** — shell commands run via `cmd /C`.
-- **macOS-only actions** — **OSX Key Press Process** and **OSX AppleScript** only work when Listener is running on macOS.
+- **macOS**
+  — Listener needs Accessibility (and related) permission for keyboard / mouse automation. Approve Bitfocus Listener in **System Settings → Privacy & Security → Accessibility** if prompted.
+  — **macOS Key Press Process** and **macOS AppleScript** only work when Listener is running on macOS.
+- **Windows**
+  — shell commands run via `cmd /C`.
 
 ### Key names and modifiers
 
@@ -57,7 +59,7 @@ Keyboard actions use searchable dropdowns for keys and modifiers. Prefer selecti
 
 Key categories include Navigation, Function, Media, System, Modifiers, Numbers, Letters, and Symbols. You can also enter a custom value if needed.
 
-**Modifiers** (for Key Combination / OSX Key Press Process):
+**Modifiers** (for Key Combination / macOS Key Press Process):
 
 - `alt` — Alt / Option
 - `ctrl` — Ctrl
@@ -81,8 +83,8 @@ Examples:
 - **Key Combination Press** — press a key with one or more modifiers
 - **Key String** — type a text string into the focused field / application (Companion variables supported)
 - **Volume Up / Down / Mute** — media volume keys (same as Key Press with `volumeup` / `volumedown` / `mute`)
-- **OSX Key Press Process** _(macOS only)_ — activate an application by name, then send a key (with optional modifiers). Process name examples: `Finder`, `Google Chrome`, `Microsoft PowerPoint`
-- **OSX AppleScript** _(macOS only)_ — run an AppleScript snippet on the Listener machine (Companion variables supported)
+- **macOS Key Press Process** _(macOS only)_ — activate an application by name, then send a key (with optional modifiers). Process name examples: `Finder`, `Google Chrome`, `Microsoft PowerPoint`
+- **macOS AppleScript** _(macOS only)_ — run an AppleScript snippet on the Listener machine (Companion variables supported)
 
 **Mouse**
 
@@ -97,7 +99,7 @@ Examples:
 
 ### Variables
 
-Values update when Listener sends data. Connection options control continuous updates:
+Values update when Listener sends data. Configuration settings control these updates:
 
 - **Subscribe to System Info** (default on) — CPU / memory / process variables every ~5 seconds
 - **Subscribe to Mouse Position** (default off) — mouse X/Y every ~1 second
@@ -126,8 +128,6 @@ Boolean feedbacks compare the latest Listener values to a threshold (shown under
 - **Process Count Above Threshold**
 - **Mouse X Above Threshold**
 - **Mouse Y Above Threshold**
-
-Note: key-held conditions (e.g. “is Shift pressed?”) are not available — Listener does not report keyboard modifier state.
 
 ### Tips
 

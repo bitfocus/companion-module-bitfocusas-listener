@@ -100,9 +100,9 @@ export function UpdateActions(self: ModuleInstance): void {
 				})
 			},
 		},
-		// OSX Key Press Process (OSX only)
+		// macOS - Key Press Process (macOS only)
 		osx_key_press_process: {
-			name: 'OSX Key Press Process (OSX only)',
+			name: 'macOS - Key Press Process (macOS only)',
 			options: [
 				{
 					...KEY_DROPDOWN,
@@ -128,9 +128,9 @@ export function UpdateActions(self: ModuleInstance): void {
 				})
 			},
 		},
-		// OSX AppleScript (OSX only)
+		// macOS - AppleScript (macOS only)
 		osx_applescript: {
-			name: 'OSX AppleScript (OSX only)',
+			name: 'macOS - AppleScript (macOS only)',
 			options: [
 				{
 					type: 'textinput',
