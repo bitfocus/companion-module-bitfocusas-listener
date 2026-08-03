@@ -1,6 +1,6 @@
 import type { DropdownChoice } from '@companion-module/base'
 
-const KEY_DISPLAY_NAMES: Record<string, string> = {
+export const KEY_DISPLAY_NAMES: Record<string, string> = {
 	up: '↑ Up Arrow',
 	down: '↓ Down Arrow',
 	left: '← Left Arrow',
@@ -31,11 +31,10 @@ const KEY_DISPLAY_NAMES: Record<string, string> = {
 	alt: 'Alt / Option',
 	shift: 'Shift',
 	command: 'Cmd (Mac)',
-	cmd: 'Cmd',
 	win: 'Windows',
 }
 
-const KEY_CATEGORIES: Record<string, string[]> = {
+export const KEY_CATEGORIES: Record<string, string[]> = {
 	Navigation: [
 		'up',
 		'down',
@@ -52,8 +51,8 @@ const KEY_CATEGORIES: Record<string, string[]> = {
 	],
 	Function: ['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f12'],
 	Media: ['play', 'pause', 'stop', 'next', 'previous', 'volumeup', 'volumedown', 'mute'],
-	System: ['esc', 'enter', 'space', 'print', 'scroll', 'break', 'break'],
-	Modifiers: ['ctrl', 'alt', 'shift', 'command', 'cmd', 'win'],
+	System: ['esc', 'enter', 'space', 'print', 'scroll', 'break'],
+	Modifiers: ['ctrl', 'alt', 'shift', 'command', 'win'],
 	Numbers: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
 	Letters: [
 		'a',
@@ -119,6 +118,46 @@ const KEY_CATEGORIES: Record<string, string[]> = {
 	],
 }
 
+/** Short label suitable for a Stream Deck button face. */
+export function keyButtonText(key: string): string {
+	const short: Record<string, string> = {
+		up: 'Up',
+		down: 'Down',
+		left: 'Left',
+		right: 'Right',
+		home: 'Home',
+		end: 'End',
+		pageup: 'PgUp',
+		pagedown: 'PgDn',
+		tab: 'Tab',
+		backspace: 'Bksp',
+		delete: 'Del',
+		insert: 'Ins',
+		esc: 'Esc',
+		enter: 'Enter',
+		space: 'Space',
+		print: 'PrtSc',
+		scroll: 'ScrLk',
+		pause: 'Pause',
+		break: 'Break',
+		play: 'Play',
+		stop: 'Stop',
+		next: 'Next',
+		previous: 'Prev',
+		volumeup: 'Vol\n+',
+		volumedown: 'Vol\n-',
+		mute: 'Mute',
+		ctrl: 'Ctrl',
+		alt: 'Alt',
+		shift: 'Shift',
+		command: 'Cmd',
+		win: 'Win',
+	}
+	if (short[key]) return short[key]
+	if (/^[a-z]$/.test(key)) return key.toUpperCase()
+	return KEY_DISPLAY_NAMES[key] ?? key
+}
+
 function keyLabel(category: string, key: string): string {
 	const display = KEY_DISPLAY_NAMES[key] ?? key
 	return `${category}: ${display}`
@@ -146,7 +185,6 @@ export const MODIFIER_CHOICES: DropdownChoice[] = [
 	{ id: 'alt', label: 'Alt / Option' },
 	{ id: 'shift', label: 'Shift' },
 	{ id: 'command', label: 'Cmd / Command (Mac)' },
-	{ id: 'cmd', label: 'Cmd' },
 	{ id: 'win', label: 'Windows' },
 ]
 

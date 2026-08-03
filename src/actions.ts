@@ -214,7 +214,7 @@ export function UpdateActions(self: ModuleInstance): void {
 					label: 'X Position',
 					default: 500,
 					min: 0,
-					max: 2000,
+					max: 100000,
 				},
 				{
 					type: 'number',
@@ -222,15 +222,38 @@ export function UpdateActions(self: ModuleInstance): void {
 					label: 'Y Position',
 					default: 500,
 					min: 0,
-					max: 2000,
+					max: 100000,
 				},
 			],
 			callback: async (event) => {
-				self.sendCommand({
-					type: 'mousePositionSet',
-					x: (event.options.x as number).toString(),
-					y: (event.options.y as number).toString(),
-				})
+				self.setMousePosition(Number(event.options.x), Number(event.options.y))
+			},
+		},
+		// Adjust Mouse Position (relative offset)
+		adjust_mouse_position: {
+			name: 'Adjust Mouse Position',
+			options: [
+				{
+					type: 'number',
+					id: 'x',
+					label: 'X Offset',
+					default: 0,
+					min: -100000,
+					max: 100000,
+					tooltip: 'Positive moves right, negative moves left',
+				},
+				{
+					type: 'number',
+					id: 'y',
+					label: 'Y Offset',
+					default: 0,
+					min: -100000,
+					max: 100000,
+					tooltip: 'Positive moves down, negative moves up',
+				},
+			],
+			callback: async (event) => {
+				self.adjustMousePosition(Number(event.options.x), Number(event.options.y))
 			},
 		},
 		// Get Mouse Position

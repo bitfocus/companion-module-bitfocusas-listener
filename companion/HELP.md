@@ -89,6 +89,7 @@ Examples:
 **Mouse**
 
 - **Set Mouse Position** — move the cursor to screen coordinates `X` / `Y` (origin is typically top-left of the primary display)
+- **Adjust Mouse Position** — move the cursor by a relative `X` / `Y` offset from its current position (positive X = right, positive Y = down). If the current position is unknown, the module fetches it first.
 - **Get Mouse Position** — request the current cursor position from Listener
 - **Mouse Click** — left or right click; optional double-click
 

@@ -12,6 +12,7 @@ import {
 import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
+import { UpdatePresets } from './presets.js'
 import { createHash } from 'node:crypto'
 
 export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
@@ -29,6 +30,8 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	maxReconnectDelay = 10000 // Cap at 10 seconds
 	reconnectIncrementMs = 500 // Increment by 500ms
 	absoluteMaxReconnectDelay = 15000 // Absolute max of 15 seconds
+	/** Pending relative mouse move, applied after the next mousePositionGetResponse. */
+	pendingMouseAdjust: { dx: number; dy: number } | null = null
 
 	async init(config: ModuleConfig, _isFirstInit: boolean, secrets: ModuleSecrets): Promise<void> {
 		this.config = config
@@ -37,6 +40,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		this.updateActions()
 		this.updateFeedbacks()
 		this.updateVariableDefinitions()
+		this.updatePresets()
 
 		// Initially, set status to Warning until authenticated.
 		this.updateStatus(InstanceStatus.UnknownWarning)
@@ -123,6 +127,11 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 					this.setVariableValues(stateToVariableValues(this.state))
 					this.checkFeedbacks('mouse_x_above', 'mouse_y_above')
 				}
+				const pending = this.pendingMouseAdjust
+				if (pending) {
+					this.pendingMouseAdjust = null
+					this.applyMouseAdjust(pending.dx, pending.dy)
+				}
 				return
 			}
 			case 'sysInfoUpdate': {
@@ -149,6 +158,47 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			this.socket.send(JSON.stringify(cmd))
 		} else {
 			this.log('error', 'Socket not connected')
+		}
+	}
+
+	/** Move the cursor by a relative offset. Uses known position, or fetches it first. */
+	adjustMousePosition(dx: number, dy: number): void {
+		if (this.state.mouseX !== null && this.state.mouseY !== null) {
+			this.applyMouseAdjust(dx, dy)
+			return
+		}
+
+		if (this.pendingMouseAdjust) {
+			this.pendingMouseAdjust.dx += dx
+			this.pendingMouseAdjust.dy += dy
+			return
+		}
+
+		this.pendingMouseAdjust = { dx, dy }
+		this.sendCommand({ type: 'mousePositionGet' })
+	}
+
+	applyMouseAdjust(dx: number, dy: number): void {
+		if (this.state.mouseX === null || this.state.mouseY === null) {
+			this.log('warn', 'Cannot adjust mouse position: current position unknown')
+			return
+		}
+
+		const x = Math.round(this.state.mouseX + dx)
+		const y = Math.round(this.state.mouseY + dy)
+		this.setMousePosition(x, y)
+	}
+
+	/** Absolute mouse move; also updates local state so subsequent adjusts stay in sync. */
+	setMousePosition(x: number, y: number): void {
+		this.sendCommand({
+			type: 'mousePositionSet',
+			x: String(x),
+			y: String(y),
+		})
+		if (applyMousePosition(this.state, x, y)) {
+			this.setVariableValues(stateToVariableValues(this.state))
+			this.checkFeedbacks('mouse_x_above', 'mouse_y_above')
 		}
 	}
 
@@ -249,6 +299,10 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 
 	updateVariableDefinitions(): void {
 		UpdateVariableDefinitions(this)
+	}
+
+	updatePresets(): void {
+		UpdatePresets(this)
 	}
 }
 
