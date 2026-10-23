@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0/).
 
+## [Unreleased]
+
+### Added
+
+- F13–F24 keys in the Function category ([#30](https://github.com/bitfocus/companion-module-bitfocusas-listener/issues/30))
+- Caps Lock and Menu keys in the System category
+- Numpad category (0–9, `.`, `+`, `-`, `*`, `/`, Num Lock)
+- Windows-only keys are labelled as such in dropdowns and presets
+- **Create / Write File** action: append text to a file (or create a file if none exists) in one of Listener's allowed write folders
+- Listener errors (for example a blocked command) are now logged as warnings instead of debug messages
+
 ## [1.1.0] - 2026-08-03
 
 ### Added

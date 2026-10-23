@@ -32,6 +32,13 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	absoluteMaxReconnectDelay = 15000 // Absolute max of 15 seconds
 	/** Pending relative mouse move, applied after the next mousePositionGetResponse. */
 	pendingMouseAdjust: { dx: number; dy: number } | null = null
+	/** Folder names from Listener's Allowed Write File Paths, for the Create / Write File dropdown. */
+	fileWriteRoots: string[] = []
+	/**
+	 * Set while fileWriteRootsGet awaits its reply. Listener answers a client's commands in
+	 * order, so the next error while this is set is the rejection of that request.
+	 */
+	fileWriteRootsPending = false
 
 	async init(config: ModuleConfig, _isFirstInit: boolean, secrets: ModuleSecrets): Promise<void> {
 		this.config = config
@@ -108,6 +115,9 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 				if (msg.status === 'authenticated') {
 					this.log('debug', 'Authentication successful')
 					this.updateStatus(InstanceStatus.Ok)
+					// Sent before the subscriptions so their errors can't be mistaken for its reply
+					this.fileWriteRootsPending = true
+					this.sendCommand({ type: 'fileWriteRootsGet' })
 					this.applyConfiguredSubscriptions()
 				} else {
 					this.log('error', 'Authentication failed')
@@ -137,6 +147,26 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 				}
 				return
 			}
+			case 'fileWriteRootsGetResponse':
+			case 'fileWriteRootsChanged': {
+				if (msg.type === 'fileWriteRootsGetResponse') this.fileWriteRootsPending = false
+				this.setFileWriteRoots(
+					Array.isArray(msg.roots) ? msg.roots.filter((r): r is string => typeof r === 'string') : [],
+				)
+				return
+			}
+			case 'error': {
+				const message = typeof msg.message === 'string' ? msg.message : JSON.stringify(msg)
+				if (this.fileWriteRootsPending) {
+					// Expected when Create / Write File is off or Listener predates it
+					this.fileWriteRootsPending = false
+					this.setFileWriteRoots([])
+					this.log('debug', `Folder list unavailable: ${message}`)
+				} else {
+					this.log('warn', `Listener: ${message}`)
+				}
+				return
+			}
 			case 'sysInfoUpdate': {
 				if (this.config.subscribeSysInfo !== true) return
 				if (applySysInfo(this.state, msg)) {
@@ -147,6 +177,14 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 			default:
 				this.log('debug', `Received message: ${JSON.stringify(msg)}`)
 		}
+	}
+
+	/** Update the Create / Write File folder dropdown, rebuilding actions only when the list changed. */
+	setFileWriteRoots(roots: string[]): void {
+		const unchanged = roots.length === this.fileWriteRoots.length && roots.every((r, i) => r === this.fileWriteRoots[i])
+		if (unchanged) return
+		this.fileWriteRoots = roots
+		this.updateActions()
 	}
 
 	// Compute MD5 hash using Node's crypto module.
@@ -338,6 +376,10 @@ export class ModuleInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 		// Reset reconnection state
 		this.reconnectAttempts = 0
 		this.reconnectDelay = 500
+
+		// The host may have changed; don't offer the previous Listener's folders
+		this.fileWriteRootsPending = false
+		this.setFileWriteRoots([])
 
 		// Reconnect so Listener drops any previous subscriptions and we re-apply from config
 		this.closeSocket(false)
