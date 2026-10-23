@@ -1,6 +1,6 @@
 ## Bitfocus Listener
 
-Control a remote Mac or Windows computer from Companion / Buttons using [Bitfocus Listener](https://support.bitfocus.io/hc/en-us/sections/35268661854610-Bitfocus-Listener).
+Control a remote Mac or Windows computer from Companion / Buttons using [Bitfocus Listener](https://bitfocus.io/docs/listener/bitfocus-listener-quick-start).
 
 Listener is a small app that runs on the machine you want to control. This module connects to it over WebSocket and can send key presses, mouse actions, shell commands, and more.
 
@@ -23,7 +23,7 @@ Download Listener from [https://user.bitfocus.io/download](https://user.bitfocus
 
 If authentication fails, double-check the password and regenerate it in Listener if needed (**Generate New**).
 
-Official setup guide: [Bitfocus Listener Quick Start](https://support.bitfocus.io/hc/en-us/articles/35257549885458-Bitfocus-Listener-Quick-Start).
+Official setup guide: [Bitfocus Listener Quick Start](https://bitfocus.io/docs/listener/bitfocus-listener-quick-start).
 
 ### Listener security settings
 
@@ -153,5 +153,5 @@ Boolean feedbacks compare the latest Listener values to a threshold (shown under
 
 ### Support
 
-- Listener help: [Bitfocus Listener](https://support.bitfocus.io/hc/en-us/sections/35268661854610-Bitfocus-Listener)
+- Listener help: [Bitfocus Listener](https://bitfocus.io/docs/listener/bitfocus-listener-quick-start)
 - Module issues: [GitHub Issues](https://github.com/bitfocus/companion-module-bitfocusas-listener/issues)
