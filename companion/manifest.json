@@ -2,15 +2,23 @@
 	"id": "bitfocusas-listener",
 	"name": "bitfocusas-listener",
 	"shortname": "bf-listener",
-	"description": "Computer keypresser module",
+	"description": "Send key presses, control the mouse, execute shell commands, and more on a remote computer.",
 	"version": "0.0.0",
 	"license": "MIT",
 	"repository": "git+https://github.com/bitfocus/companion-module-bitfocusas-listener.git",
 	"bugs": "https://github.com/bitfocus/companion-module-bitfocusas-listener/issues",
 	"maintainers": [
 		{
+			"name": "Bitfocus AS",
+			"email": "connections@bitfocus.io"
+		},
+		{
 			"name": "William Viker",
 			"email": "william@bitfocus.io"
+		},
+		{
+			"name": "Bryce Seifert",
+			"email": "bryce@bitfocus.io"
 		}
 	],
 	"runtime": {
@@ -22,5 +30,5 @@
 	"legacyIds": [],
 	"manufacturer": "Bitfocus",
 	"products": ["Listener"],
-	"keywords": []
+	"keywords": ["keyboard", "keypress", "mouse", "remote", "shell", "applescript", "files"]
 }
