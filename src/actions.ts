@@ -206,6 +206,63 @@ export function UpdateActions(self: ModuleInstance): void {
 				})
 			},
 		},
+		// Create / Write File
+		write_file: {
+			name: 'Create / Write File',
+			description: `Adds text to the end of a file inside one of Listener's "Allowed Write File Paths", creating it if needed`,
+			options: [
+				{
+					type: 'dropdown',
+					id: 'root',
+					label: 'Folder',
+					choices: [
+						{ id: '', label: '(Only folder)' },
+						...self.fileWriteRoots.map((name) => ({ id: name, label: name })),
+					],
+					default: '',
+					allowCustom: true,
+					tooltip:
+						'Folder name from Listener → Security → Allowed write file paths. "(Only folder)" uses the single folder when Listener has just one, and keeps working if it is renamed.',
+				},
+				{
+					type: 'textinput',
+					id: 'path',
+					label: 'File Path',
+					default: 'log.txt',
+					useVariables: true,
+					tooltip:
+						'Relative to the folder, e.g. 2026/show.csv. Allowed types: .txt .csv .tsv .json .jsonl .ndjson .log .md .srt .vtt .edl .xml .yaml .yml',
+				},
+				{
+					type: 'textinput',
+					id: 'msg',
+					label: 'Text',
+					default: '',
+					useVariables: true,
+					multiline: true,
+				},
+				{
+					type: 'dropdown',
+					id: 'newline',
+					label: 'Line Ending',
+					choices: [
+						{ id: 'lf', label: 'New line (LF)' },
+						{ id: 'crlf', label: 'New line (CRLF, Windows)' },
+						{ id: 'none', label: 'None' },
+					],
+					default: 'lf',
+				},
+			],
+			callback: async (event) => {
+				self.sendCommand({
+					type: 'fileWrite',
+					root: event.options.root,
+					path: event.options.path,
+					msg: event.options.msg,
+					newline: event.options.newline,
+				})
+			},
+		},
 		// Set Mouse Position
 		set_mouse_position: {
 			name: 'Set Mouse Position',

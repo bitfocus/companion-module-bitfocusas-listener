@@ -16,6 +16,8 @@ export const KEY_DISPLAY_NAMES: Record<string, string> = {
 	esc: 'Escape',
 	enter: 'Enter',
 	space: 'Space',
+	capslock: 'Caps Lock',
+	menu: 'Menu / Context',
 	print: 'Print Screen',
 	scroll: 'Scroll Lock',
 	pause: 'Pause',
@@ -32,6 +34,49 @@ export const KEY_DISPLAY_NAMES: Record<string, string> = {
 	shift: 'Shift',
 	command: 'Cmd (Mac)',
 	win: 'Windows',
+	num_lock: 'Num Lock',
+	'num.': 'Numpad .',
+	'num+': 'Numpad +',
+	'num-': 'Numpad -',
+	'num*': 'Numpad *',
+	'num/': 'Numpad /',
+	...Object.fromEntries(Array.from({ length: 10 }, (_, i) => [`num${i}`, `Numpad ${i}`])),
+}
+
+/** Keys Listener can only send on Windows; its macOS key table has no code for them. */
+export const WINDOWS_ONLY_KEYS = new Set([
+	'f16',
+	'f17',
+	'f18',
+	'f19',
+	'f20',
+	'f21',
+	'f22',
+	'f23',
+	'f24',
+	'menu',
+	'num0',
+	'num1',
+	'num2',
+	'num3',
+	'num4',
+	'num5',
+	'num6',
+	'num7',
+	'num8',
+	'num9',
+	'num.',
+	'num+',
+	'num-',
+	'num*',
+	'num/',
+	'num_lock',
+])
+
+/** Full name for dropdowns and preset names, flagged when the key only works on Windows. */
+export function keyDisplayName(key: string): string {
+	const display = KEY_DISPLAY_NAMES[key] ?? key
+	return WINDOWS_ONLY_KEYS.has(key) ? `${display} (Windows only)` : display
 }
 
 export const KEY_CATEGORIES: Record<string, string[]> = {
@@ -49,11 +94,29 @@ export const KEY_CATEGORIES: Record<string, string[]> = {
 		'delete',
 		'insert',
 	],
-	Function: ['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f12'],
+	Function: Array.from({ length: 24 }, (_, i) => `f${i + 1}`),
 	Media: ['play', 'pause', 'stop', 'next', 'previous', 'volumeup', 'volumedown', 'mute'],
-	System: ['esc', 'enter', 'space', 'print', 'scroll', 'break'],
+	System: ['esc', 'enter', 'space', 'capslock', 'menu', 'print', 'scroll', 'break'],
 	Modifiers: ['ctrl', 'alt', 'shift', 'command', 'win'],
 	Numbers: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+	Numpad: [
+		'num0',
+		'num1',
+		'num2',
+		'num3',
+		'num4',
+		'num5',
+		'num6',
+		'num7',
+		'num8',
+		'num9',
+		'num.',
+		'num+',
+		'num-',
+		'num*',
+		'num/',
+		'num_lock',
+	],
 	Letters: [
 		'a',
 		'b',
@@ -136,6 +199,8 @@ export function keyButtonText(key: string): string {
 		esc: 'Esc',
 		enter: 'Enter',
 		space: 'Space',
+		capslock: 'Caps',
+		menu: 'Menu',
 		print: 'PrtSc',
 		scroll: 'ScrLk',
 		pause: 'Pause',
@@ -152,15 +217,17 @@ export function keyButtonText(key: string): string {
 		shift: 'Shift',
 		command: 'Cmd',
 		win: 'Win',
+		num_lock: 'Num\nLock',
 	}
 	if (short[key]) return short[key]
 	if (/^[a-z]$/.test(key)) return key.toUpperCase()
+	if (/^f\d+$/.test(key)) return key.toUpperCase()
+	if (key.startsWith('num')) return `Num\n${key.slice(3)}`
 	return KEY_DISPLAY_NAMES[key] ?? key
 }
 
 function keyLabel(category: string, key: string): string {
-	const display = KEY_DISPLAY_NAMES[key] ?? key
-	return `${category}: ${display}`
+	return `${category}: ${keyDisplayName(key)}`
 }
 
 function buildKeyChoices(): DropdownChoice[] {

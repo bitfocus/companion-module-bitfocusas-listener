@@ -4,7 +4,7 @@ import {
 	type CompanionPresetDefinitions,
 } from '@companion-module/base'
 import type { ModuleInstance } from './main.js'
-import { KEY_CATEGORIES, KEY_DISPLAY_NAMES, keyButtonText } from './keys.js'
+import { KEY_CATEGORIES, keyButtonText, keyDisplayName } from './keys.js'
 import { VariableIds } from './variables.js'
 
 const WHITE = combineRgb(255, 255, 255)
@@ -18,11 +18,10 @@ function presetIdForKey(key: string): string {
 }
 
 function keyPressPreset(category: string, key: string): CompanionButtonPresetDefinition {
-	const display = KEY_DISPLAY_NAMES[key] ?? key
 	return {
 		type: 'button',
 		category,
-		name: `Key Press: ${display}`,
+		name: `Key Press: ${keyDisplayName(key)}`,
 		style: {
 			text: keyButtonText(key),
 			size: 'auto',

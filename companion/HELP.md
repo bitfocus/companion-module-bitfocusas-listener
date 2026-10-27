@@ -1,6 +1,6 @@
 ## Bitfocus Listener
 
-Control a remote Mac or Windows computer from Companion / Buttons using [Bitfocus Listener](https://support.bitfocus.io/hc/en-us/sections/35268661854610-Bitfocus-Listener).
+Control a remote Mac or Windows computer from Companion / Buttons using [Bitfocus Listener](https://bitfocus.io/docs/listener/bitfocus-listener-quick-start).
 
 Listener is a small app that runs on the machine you want to control. This module connects to it over WebSocket and can send key presses, mouse actions, shell commands, and more.
 
@@ -23,7 +23,7 @@ Download Listener from [https://user.bitfocus.io/download](https://user.bitfocus
 
 If authentication fails, double-check the password and regenerate it in Listener if needed (**Generate New**).
 
-Official setup guide: [Bitfocus Listener Quick Start](https://support.bitfocus.io/hc/en-us/articles/35257549885458-Bitfocus-Listener-Quick-Start).
+Official setup guide: [Bitfocus Listener Quick Start](https://bitfocus.io/docs/listener/bitfocus-listener-quick-start).
 
 ### Listener security settings
 
@@ -57,7 +57,9 @@ Shows recent connections and actions. Useful when debugging why a command was ig
 
 Keyboard actions use searchable dropdowns for keys and modifiers. Prefer selecting from the list — that uses the exact strings Listener expects and avoids typos.
 
-Key categories include Navigation, Function, Media, System, Modifiers, Numbers, Letters, and Symbols. You can also enter a custom value if needed.
+Key categories include Navigation, Function (F1–F24), Media, System, Modifiers, Numbers, Numpad, Letters, and Symbols. You can also enter a custom value if needed.
+
+Keys marked **(Windows only)** — F16–F24, Menu, and the Numpad keys — are not supported by Listener on macOS. On macOS, F13–F15 are the same keys as Print Screen, Scroll Lock, and Pause on Apple extended keyboards.
 
 **Modifiers** (for Key Combination / macOS Key Press Process):
 
@@ -104,6 +106,10 @@ Examples:
 
 - **Shell Command** — run a shell command on the Listener machine (`sh -c` on macOS/Linux, `cmd /C` on Windows; Companion variables supported)
 - **Open File** — open a file, folder, or URL with the OS default handler (`open` / `xdg-open` / Windows FileProtocolHandler; Companion variables supported)
+- **Create / Write File** — add a line of text to the end of a file on the Listener machine, creating the file if it doesn't exist. Useful for event logs, e.g. text `Cue fired,$(internal:time_hms)` into `show-$(internal:date_iso).csv`. Companion variables work in the file path and text.
+  - Needs **Create / Write File** turned on in Listener and at least one folder under **Security → Allowed write file paths**. The **Folder** dropdown lists the names set up there and updates when they change. Choose **(Only folder)** when Listener has a single folder; it keeps working if that folder is renamed.
+  - The file path is relative to that folder; subfolders are created as needed. Only plain-text files can be written (`.txt`, `.csv`, `.json`, `.log`, `.srt`, …), and existing content is never overwritten.
+  - `: < > " | ? *` in file names are replaced with `-`, so times like `14:03:11` work on both Mac and Windows.
 
 ### Variables
 
@@ -147,5 +153,5 @@ Boolean feedbacks compare the latest Listener values to a threshold (shown under
 
 ### Support
 
-- Listener help: [Bitfocus Listener](https://support.bitfocus.io/hc/en-us/sections/35268661854610-Bitfocus-Listener)
+- Listener help: [Bitfocus Listener](https://bitfocus.io/docs/listener/bitfocus-listener-quick-start)
 - Module issues: [GitHub Issues](https://github.com/bitfocus/companion-module-bitfocusas-listener/issues)
